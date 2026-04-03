@@ -7,7 +7,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from tsfm_public.models.tinytimemixer import TinyTimeMixerConfig, TinyTimeMixerForPrediction
+from tsfm_public.models.tinytimemixer import (
+    TinyTimeMixerConfig,
+    TinyTimeMixerForPrediction,
+)
 from tsfm_public.models.tspulse import TSPulseConfig, TSPulseForReconstruction
 from tsfm_public.toolkit.ad_helpers import AnomalyScoreMethods
 from tsfm_public.toolkit.conformal import (
@@ -18,7 +21,9 @@ from tsfm_public.toolkit.conformal import (
 from tsfm_public.toolkit.time_series_anomaly_detection_pipeline import (
     TimeSeriesAnomalyDetectionPipeline,
 )
-from tsfm_public.toolkit.time_series_forecasting_pipeline import TimeSeriesForecastingPipeline
+from tsfm_public.toolkit.time_series_forecasting_pipeline import (
+    TimeSeriesForecastingPipeline,
+)
 
 
 @pytest.fixture(scope="module")
@@ -26,9 +31,14 @@ def example_dataset():
     n_variables: int = 2
     target_variables = [f"X{i + 1}" for i in range(n_variables)]
     data = np.array(
-        [np.convolve(np.random.normal(0, 1, 1000), np.ones(15) / 15, "same") for _ in range(n_variables)]
+        [
+            np.convolve(np.random.normal(0, 1, 1000), np.ones(15) / 15, "same")
+            for _ in range(n_variables)
+        ]
     ).T
-    timestamp = pd.date_range("2021-01-01", periods=len(data), freq=pd.Timedelta(5, "minute"))
+    timestamp = pd.date_range(
+        "2021-01-01", periods=len(data), freq=pd.Timedelta(5, "minute")
+    )
     df = pd.DataFrame(data, columns=target_variables)
     df["timestamp"] = timestamp
     return target_variables, df
@@ -105,13 +115,20 @@ def test_tsad_tspulse_pipeline_defaults(example_dataset, method):
     [
         [AnomalyScoreMethods.PREDICTIVE.value],
         [AnomalyScoreMethods.MEAN_DEVIATION.value],
-        [AnomalyScoreMethods.MEAN_DEVIATION.value, AnomalyScoreMethods.PREDICTIVE.value],
+        [
+            AnomalyScoreMethods.MEAN_DEVIATION.value,
+            AnomalyScoreMethods.PREDICTIVE.value,
+        ],
     ],
 )
 def test_tsad_tinytimemixer_pipeline_defaults(example_dataset, method):
     target_variables, dataset = example_dataset
     model = TinyTimeMixerForPrediction(
-        TinyTimeMixerConfig(context_length=120, prediction_length=60, num_input_channels=len(target_variables))
+        TinyTimeMixerConfig(
+            context_length=120,
+            prediction_length=60,
+            num_input_channels=len(target_variables),
+        )
     )
 
     tspipe = TimeSeriesAnomalyDetectionPipeline(
@@ -120,7 +137,9 @@ def test_tsad_tinytimemixer_pipeline_defaults(example_dataset, method):
         timestamp_column="timestamp",
         target_columns=["X1", "X2"],
     )
-    assert tspipe._preprocess_params["prediction_length"] == model.config.prediction_length
+    assert (
+        tspipe._preprocess_params["prediction_length"] == model.config.prediction_length
+    )
     assert tspipe._preprocess_params["context_length"] == model.config.context_length
     result = tspipe(dataset)
     assert result.shape[0] == dataset.shape[0]
@@ -136,13 +155,20 @@ def test_tsad_tinytimemixer_pipeline_defaults(example_dataset, method):
     "method",
     [
         [AnomalyScoreMethods.PROBABILISTIC.value],
-        [AnomalyScoreMethods.PROBABILISTIC.value, AnomalyScoreMethods.MEAN_DEVIATION.value],
+        [
+            AnomalyScoreMethods.PROBABILISTIC.value,
+            AnomalyScoreMethods.MEAN_DEVIATION.value,
+        ],
     ],
 )
 def test_tsad_tinytimemixer_pipeline_probabilistic(example_dataset, method):
     target_variables, dataset = example_dataset
     model = TinyTimeMixerForPrediction(
-        TinyTimeMixerConfig(context_length=120, prediction_length=60, num_input_channels=len(target_variables))
+        TinyTimeMixerConfig(
+            context_length=120,
+            prediction_length=60,
+            num_input_channels=len(target_variables),
+        )
     )
 
     prob_proc = PostHocProbabilisticProcessor(
@@ -154,7 +180,11 @@ def test_tsad_tinytimemixer_pipeline_probabilistic(example_dataset, method):
     )
 
     fpipe = TimeSeriesForecastingPipeline(
-        model, timestamp_column="timestamp", id_columns=[], target_columns=target_variables, device="cpu"
+        model,
+        timestamp_column="timestamp",
+        id_columns=[],
+        target_columns=target_variables,
+        device="cpu",
     )
     forecasts = fpipe(dataset)
 
@@ -178,7 +208,9 @@ def test_tsad_tinytimemixer_pipeline_probabilistic(example_dataset, method):
         target_columns=["X1", "X2"],
         device="cpu",
     )
-    assert tspipe._preprocess_params["prediction_length"] == model.config.prediction_length
+    assert (
+        tspipe._preprocess_params["prediction_length"] == model.config.prediction_length
+    )
     assert tspipe._preprocess_params["context_length"] == model.config.context_length
     result = tspipe(dataset)
     assert result.shape[0] == dataset.shape[0]

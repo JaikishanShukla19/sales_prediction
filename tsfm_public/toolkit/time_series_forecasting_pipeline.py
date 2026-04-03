@@ -24,7 +24,6 @@ from .conformal import PostHocProbabilisticProcessor
 from .dataset import ForecastDFDataset
 from .time_series_preprocessor import create_timestamps, extend_time_series
 
-
 # Eventually we should support all time series models
 # MODEL_FOR_TIME_SERIES_FORECASTING_MAPPING_NAMES = OrderedDict(
 #     [
@@ -77,7 +76,9 @@ class TimeSeriesPipeline(Pipeline):
         signature = inspect.signature(self.model.forward)
         signature_columns = list(signature.parameters.keys())
 
-        self._forward_params_model = {k: v for k, v in forward_params.items() if k in signature_columns}
+        self._forward_params_model = {
+            k: v for k, v in forward_params.items() if k in signature_columns
+        }
 
         # if len(dataset) < batch_size:
         # build a dataloader
@@ -91,7 +92,11 @@ class TimeSeriesPipeline(Pipeline):
             model_name=None,
         )
         dataloader = DataLoader(
-            dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=remove_columns_collator, shuffle=False
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            collate_fn=remove_columns_collator,
+            shuffle=False,
         )
 
         # iterate over dataloader
@@ -106,9 +111,13 @@ class TimeSeriesPipeline(Pipeline):
                     else "prediction_logits"
                 )
 
-            accumulator[self.__class__.prediction_output_key].append(item[model_output_key])
+            accumulator[self.__class__.prediction_output_key].append(
+                item[model_output_key]
+            )
             if self.__class__.quantile_output_key in item.keys():
-                accumulator[self.__class__.quantile_output_key].append(item[self.__class__.quantile_output_key])
+                accumulator[self.__class__.quantile_output_key].append(
+                    item[self.__class__.quantile_output_key]
+                )
 
         if copy_dataset_keys:
             # collect all ouputs needed for post processing
@@ -141,7 +150,9 @@ class TimeSeriesPipeline(Pipeline):
 
 
 @add_end_docstrings(
-    build_pipeline_init_args(has_tokenizer=False, has_feature_extractor=True, has_image_processor=False)
+    build_pipeline_init_args(
+        has_tokenizer=False, has_feature_extractor=True, has_image_processor=False
+    )
 )
 class TimeSeriesForecastingPipeline(TimeSeriesPipeline):
     """
@@ -185,20 +196,28 @@ class TimeSeriesForecastingPipeline(TimeSeriesPipeline):
 
         if "prediction_length" not in kwargs:
             kwargs["prediction_length"] = (
-                model.config.prediction_length if model.config.prediction_length > 0 else DEFAULT_PREDICTION_LENGTH
+                model.config.prediction_length
+                if model.config.prediction_length > 0
+                else DEFAULT_PREDICTION_LENGTH
             )
 
         # check if we need to use the frequency token, get token if needed
         use_frequency_token = getattr(model.config, "resolution_prefix_tuning", False)
 
-        if use_frequency_token and ("feature_extractor" not in kwargs) and "freq" in kwargs:
+        if (
+            use_frequency_token
+            and ("feature_extractor" not in kwargs)
+            and "freq" in kwargs
+        ):
             raise ValueError(
                 "Passing `freq` without a `feature_extractor` is not supported when the model requires a `frequency_token`."
             )
 
         if use_frequency_token:
             if "feature_extractor" in kwargs:
-                kwargs["frequency_token"] = kwargs["feature_extractor"].get_frequency_token(kwargs["freq"])
+                kwargs["frequency_token"] = kwargs[
+                    "feature_extractor"
+                ].get_frequency_token(kwargs["freq"])
         else:
             kwargs["frequency_token"] = None
 
@@ -365,7 +384,9 @@ class TimeSeriesForecastingPipeline(TimeSeriesPipeline):
 
         return super().__call__(time_series, **kwargs)
 
-    def preprocess(self, time_series, **kwargs) -> Dict[str, Union[GenericTensor, List[Any]]]:
+    def preprocess(
+        self, time_series, **kwargs
+    ) -> Dict[str, Union[GenericTensor, List[Any]]]:
         """Preprocess step
         Load the data, if not already loaded, and then generate a pytorch dataset.
         """
@@ -399,12 +420,16 @@ class TimeSeriesForecastingPipeline(TimeSeriesPipeline):
                 # do we need to check the timestamp column?
                 pass
             else:
-                raise ValueError(f"`future_time_series` of type {type(future_time_series)} is not supported.")
+                raise ValueError(
+                    f"`future_time_series` of type {type(future_time_series)} is not supported."
+                )
 
             # stack the time series
             for c in future_time_series.columns:
                 if c not in time_series.columns:
-                    raise ValueError(f"Future time series input contains an unknown column {c}.")
+                    raise ValueError(
+                        f"Future time series input contains an unknown column {c}."
+                    )
 
             if id_columns:
                 id_count = time_series[id_columns].drop_duplicates().shape[0]
@@ -419,11 +444,15 @@ class TimeSeriesForecastingPipeline(TimeSeriesPipeline):
             if self.feature_extractor:
                 # future data needs some values for targets, but they are unused
                 future_time_series[target_columns] = 0
-                future_time_series = self.feature_extractor.preprocess(future_time_series)
+                future_time_series = self.feature_extractor.preprocess(
+                    future_time_series
+                )
                 # future_time_series = future_time_series.drop(columns=target_columns)
                 future_time_series[target_columns] = np.nan
 
-            time_series = pd.concat((time_series, future_time_series), axis=0, ignore_index=True)
+            time_series = pd.concat(
+                (time_series, future_time_series), axis=0, ignore_index=True
+            )
         else:
             # no additional exogenous data provided, extend with empty periods
             time_series = extend_time_series(
@@ -476,12 +505,20 @@ class TimeSeriesForecastingPipeline(TimeSeriesPipeline):
         # outputs should only have size equal to target columns
 
         # only allow adding ground truth when not exploding
-        add_known_ground_truth = kwargs["add_known_ground_truth"] if not kwargs["explode_forecasts"] else False
+        add_known_ground_truth = (
+            kwargs["add_known_ground_truth"]
+            if not kwargs["explode_forecasts"]
+            else False
+        )
 
         prediction_columns = []
         for i, c in enumerate(kwargs["target_columns"]):
-            prediction_columns.append(f"{c}_prediction" if add_known_ground_truth else c)
-            out[prediction_columns[-1]] = input[model_output_key][:, :, i].detach().cpu().numpy().tolist()
+            prediction_columns.append(
+                f"{c}_prediction" if add_known_ground_truth else c
+            )
+            out[prediction_columns[-1]] = (
+                input[model_output_key][:, :, i].detach().cpu().numpy().tolist()
+            )
 
         # provide the ground truth values for the targets
         # when future is unknown, we will have augmented the provided dataframe with NaN values to cover the future
@@ -503,7 +540,9 @@ class TimeSeriesForecastingPipeline(TimeSeriesPipeline):
         if self.feature_extractor is not None and kwargs["inverse_scale_outputs"]:
             out = self.feature_extractor.inverse_scale_targets(out)
             if add_known_ground_truth:
-                out = self.feature_extractor.inverse_scale_targets(out, suffix="_prediction")
+                out = self.feature_extractor.inverse_scale_targets(
+                    out, suffix="_prediction"
+                )
 
         # add probabilistic
         quantile_cols = []
@@ -521,7 +560,9 @@ class TimeSeriesForecastingPipeline(TimeSeriesPipeline):
                     prob_data[col] = predictions_conformal[..., i, j].tolist()
                     quantile_cols.append(col)
                     # out[f"{c}_q{q}"] = predictions_conformal[..., i, j].tolist()
-            out = pd.concat([out, pd.DataFrame(prob_data, columns=quantile_cols)], axis=1)
+            out = pd.concat(
+                [out, pd.DataFrame(prob_data, columns=quantile_cols)], axis=1
+            )
         elif quantile_output_key in input.keys():
             # model has native support for quantiles
             # first we check if the model enables passing at runtime, and the user passed quantile_levels
@@ -533,12 +574,25 @@ class TimeSeriesForecastingPipeline(TimeSeriesPipeline):
             for i, q in enumerate(output_quantile_levels):
                 for j, c in enumerate(prediction_columns):
                     col = f"{c}_q{q}"
-                    prob_data[col] = input[quantile_output_key][:, i, :, j].detach().cpu().numpy().tolist()
+                    prob_data[col] = (
+                        input[quantile_output_key][:, i, :, j]
+                        .detach()
+                        .cpu()
+                        .numpy()
+                        .tolist()
+                    )
                     quantile_cols.append(col)
-            out = pd.concat([out, pd.DataFrame(prob_data, columns=quantile_cols)], axis=1)
+            out = pd.concat(
+                [out, pd.DataFrame(prob_data, columns=quantile_cols)], axis=1
+            )
             for i, q in enumerate(output_quantile_levels):
-                if self.feature_extractor is not None and kwargs["inverse_scale_outputs"]:
-                    out = self.feature_extractor.inverse_scale_targets(out, suffix=f"_prediction_q{q}")
+                if (
+                    self.feature_extractor is not None
+                    and kwargs["inverse_scale_outputs"]
+                ):
+                    out = self.feature_extractor.inverse_scale_targets(
+                        out, suffix=f"_prediction_q{q}"
+                    )
 
         if kwargs["explode_forecasts"]:
             # we made only one forecast per time series, explode results

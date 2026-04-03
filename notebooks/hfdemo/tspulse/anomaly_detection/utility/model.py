@@ -14,14 +14,19 @@ from transformers import EarlyStoppingCallback, Trainer, TrainingArguments
 
 from tsfm_public.models.tspulse.modeling_tspulse import TSPulseForReconstruction
 from tsfm_public.models.tspulse.utils.helpers import PatchMaskingDatasetWrapper
-from tsfm_public.toolkit.time_series_anomaly_detection_pipeline import TimeSeriesAnomalyDetectionPipeline
+from tsfm_public.toolkit.time_series_anomaly_detection_pipeline import (
+    TimeSeriesAnomalyDetectionPipeline,
+)
 
 from .base_model import BaseDetector
 from .datasets import TSBADFinetuneDataset
 
 
 def attach_timestamp_column(
-    df: pd.DataFrame, time_col: str = "timestamp", freq: str = "5s", start_date: str = "2002-01-01"
+    df: pd.DataFrame,
+    time_col: str = "timestamp",
+    freq: str = "5s",
+    start_date: str = "2002-01-01",
 ):
     n = df.shape[0]
     if time_col not in df:
@@ -73,7 +78,9 @@ class TSAD_Pipeline(BaseDetector):
         # Reading patch length from the loaded model instance
         p_length = self._model.config.patch_length
         if (aggr_win_size < p_length) or (aggr_win_size % p_length != 0):
-            raise ValueError(f"Error: aggregation window must be greater than and multiple of patch_length={p_length}")
+            raise ValueError(
+                f"Error: aggregation window must be greater than and multiple of patch_length={p_length}"
+            )
         prediction_mode_array = [s_.strip() for s_ in str(prediction_mode).split("+")]
         # Storing pipeline configuration parameters
         self._pipeline_config = {
@@ -99,8 +106,12 @@ class TSAD_Pipeline(BaseDetector):
             prediction_mode=prediction_mode_array,
             aggregation_length=aggr_win_size,
             smoothing_window=self._pipeline_config.get("smoothing_window"),
-            least_significant_scale=self._pipeline_config.get("least_significant_scale"),
-            least_significant_score=self._pipeline_config.get("least_significant_score"),
+            least_significant_scale=self._pipeline_config.get(
+                "least_significant_scale"
+            ),
+            least_significant_score=self._pipeline_config.get(
+                "least_significant_score"
+            ),
         )
 
     def zero_shot(self, x, label=None):
@@ -109,7 +120,9 @@ class TSAD_Pipeline(BaseDetector):
     def fit(self, X, y=None):
         try:
             print("Fine-tuning TSPulse.")
-            validation_size = float(self._finetune_params.get("finetune_validation", 0.2))
+            validation_size = float(
+                self._finetune_params.get("finetune_validation", 0.2)
+            )
             create_valid = True
             if X.shape[0] < 3000:  # 20% of this should be > context_len
                 print("Data too small to create a validation set.")
@@ -123,7 +136,9 @@ class TSAD_Pipeline(BaseDetector):
             tsTrain = X[: int((1 - validation_size) * len(X))]
             context_length = self._model.config.context_length
             train_dataset = PatchMaskingDatasetWrapper(
-                TSBADFinetuneDataset(tsTrain, window_size=context_length, return_dict=True),
+                TSBADFinetuneDataset(
+                    tsTrain, window_size=context_length, return_dict=True
+                ),
                 window_length=self._pipeline_config.get("aggregation_length"),
                 patch_length=self._model.config.patch_length,
                 window_position="last",
@@ -135,7 +150,9 @@ class TSAD_Pipeline(BaseDetector):
             if create_valid:
                 tsValid = X[int((1 - validation_size) * len(X)) :]
                 valid_dataset = PatchMaskingDatasetWrapper(
-                    TSBADFinetuneDataset(tsValid, window_size=context_length, return_dict=True),
+                    TSBADFinetuneDataset(
+                        tsValid, window_size=context_length, return_dict=True
+                    ),
                     window_length=self._pipeline_config.get("aggregation_length"),
                     patch_length=self._model.config.patch_length,
                     window_position="last",
@@ -147,8 +164,12 @@ class TSAD_Pipeline(BaseDetector):
             if len(train_dataset) > max_finetune_samples:
                 use_fraction = max_finetune_samples / len(train_dataset)
                 # Randomly select use_fraction samples to make finetuning faster
-                train_dataset, _ = random_split(train_dataset, [use_fraction, 1 - use_fraction])
-                valid_dataset, _ = random_split(valid_dataset, [use_fraction, 1 - use_fraction])
+                train_dataset, _ = random_split(
+                    train_dataset, [use_fraction, 1 - use_fraction]
+                )
+                valid_dataset, _ = random_split(
+                    valid_dataset, [use_fraction, 1 - use_fraction]
+                )
                 print(
                     f"Training samples are > max_finetune_samples ({max_finetune_samples}), using {round(use_fraction * 100)}% for faster fine-tuning."
                 )
@@ -163,7 +184,9 @@ class TSAD_Pipeline(BaseDetector):
             temp_dir = tempfile.mkdtemp()
 
             suggested_lr = self._finetune_params.get("finetune_lr", 1e-4)
-            finetune_num_epochs: int = int(self._finetune_params.get("finetune_epochs", 20))
+            finetune_num_epochs: int = int(
+                self._finetune_params.get("finetune_epochs", 20)
+            )
             if not create_valid:
                 finetune_num_epochs = min(5, finetune_num_epochs)
 
@@ -173,7 +196,9 @@ class TSAD_Pipeline(BaseDetector):
             num_workers = 4
             num_gpus = 1
 
-            print(f"Fine-tune: Train samples = {len(train_dataset)}, Valid Samples = {len(valid_dataset)}")
+            print(
+                f"Fine-tune: Train samples = {len(train_dataset)}, Valid Samples = {len(valid_dataset)}"
+            )
 
             finetune_args = TrainingArguments(
                 output_dir=temp_dir,
@@ -207,7 +232,9 @@ class TSAD_Pipeline(BaseDetector):
                 optimizer,
                 suggested_lr,
                 epochs=finetune_num_epochs,
-                steps_per_epoch=math.ceil(len(train_dataset) / (finetune_batch_size * num_gpus)),
+                steps_per_epoch=math.ceil(
+                    len(train_dataset) / (finetune_batch_size * num_gpus)
+                ),
             )
 
             finetune_trainer = Trainer(

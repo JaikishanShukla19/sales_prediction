@@ -8,7 +8,6 @@ from typing import Dict, Optional
 
 from .version import __version__, __version_tuple__
 
-
 TSFM_PYTHON_LOGGING_LEVEL = os.getenv("TSFM_PYTHON_LOGGING_LEVEL", "INFO")
 
 LevelNamesMapping = {
@@ -34,7 +33,9 @@ TSFM_PYTHON_LOGGING_FORMAT = os.getenv(
 TSFM_ALLOW_LOAD_FROM_HF_HUB = int(os.getenv("TSFM_ALLOW_LOAD_FROM_HF_HUB", "1")) == 1
 
 # use TSFM_MODEL_DIR preferentially. If not set, use HF_HOME or the system tempdir if that's not set.
-TSFM_MODEL_DIR: str = os.environ.get("TSFM_MODEL_DIR", os.environ.get("HF_HOME", tempfile.gettempdir()))
+TSFM_MODEL_DIR: str = os.environ.get(
+    "TSFM_MODEL_DIR", os.environ.get("HF_HOME", tempfile.gettempdir())
+)
 
 # basic checks
 # make sure at least one of them is a valid directory
@@ -65,4 +66,6 @@ else:
             """This is not a full API match for the Histogram __init__"""
             ...
 
-        def observe(self, amount: float, exemplar: Optional[Dict[str, str]] = None) -> None: ...
+        def observe(
+            self, amount: float, exemplar: Optional[Dict[str, str]] = None
+        ) -> None: ...

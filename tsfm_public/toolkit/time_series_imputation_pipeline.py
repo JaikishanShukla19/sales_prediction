@@ -18,7 +18,6 @@ from transformers.utils import add_end_docstrings, logging
 from .dataset import ForecastDFDataset
 from .time_series_forecasting_pipeline import TimeSeriesPipeline
 
-
 logger = logging.get_logger(__name__)
 
 # Eventually we should support all time series models
@@ -31,7 +30,9 @@ MODEL_FOR_TIME_SERIES_IMPUTATION_MAPPING_NAMES = OrderedDict(
 
 
 @add_end_docstrings(
-    build_pipeline_init_args(has_tokenizer=False, has_feature_extractor=True, has_image_processor=False)
+    build_pipeline_init_args(
+        has_tokenizer=False, has_feature_extractor=True, has_image_processor=False
+    )
 )
 class TimeSeriesImputationPipeline(TimeSeriesPipeline):
     """
@@ -206,7 +207,9 @@ class TimeSeriesImputationPipeline(TimeSeriesPipeline):
 
         return super().__call__(time_series, **kwargs)
 
-    def preprocess(self, time_series, **kwargs) -> Dict[str, Union[GenericTensor, List[Any]]]:
+    def preprocess(
+        self, time_series, **kwargs
+    ) -> Dict[str, Union[GenericTensor, List[Any]]]:
         """Preprocess step
         Load the data, if not already loaded, and then generate a pytorch dataset.
         """
@@ -273,13 +276,19 @@ class TimeSeriesImputationPipeline(TimeSeriesPipeline):
         for i in range(n_batches):
             predictions[i : (i + n_obs)] += input[i]
             counters[i : (i + n_obs)] += 1
-        reconstructed_out = predictions / np.maximum(counters, 1)  # this output is all reconstructions from the model
+        reconstructed_out = predictions / np.maximum(
+            counters, 1
+        )  # this output is all reconstructions from the model
 
-        reconstructed_df = pd.DataFrame(reconstructed_out, columns=kwargs["target_columns"])
+        reconstructed_df = pd.DataFrame(
+            reconstructed_out, columns=kwargs["target_columns"]
+        )
 
         # inverse scale if we have a feature extractor
         if self.feature_extractor is not None and kwargs["inverse_scale_outputs"]:
-            reconstructed_df = self.feature_extractor.inverse_scale_targets(reconstructed_df)
+            reconstructed_df = self.feature_extractor.inverse_scale_targets(
+                reconstructed_df
+            )
 
         # need to select original values for non-missing points and use the reconstructed values only for missing points
         reconstructed_df.index = out.index

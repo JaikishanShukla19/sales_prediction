@@ -20,7 +20,10 @@ def payload(json_file_name: str = None):
     # Generate 10 sequential dates starting from today
     tslength = 1024
     start_date = datetime(2020, 1, 1)
-    date_range = [d.isoformat() for d in pd.date_range(start=start_date, periods=tslength, freq="h")]
+    date_range = [
+        d.isoformat()
+        for d in pd.date_range(start=start_date, periods=tslength, freq="h")
+    ]
     ids = ["A" for _ in range(tslength)]
     values = np.random.rand(tslength)
 

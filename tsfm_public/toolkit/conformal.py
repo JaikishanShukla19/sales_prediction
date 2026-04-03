@@ -16,7 +16,6 @@ from transformers.feature_extraction_utils import PreTrainedFeatureExtractor
 
 from tsfm_public.toolkit.processor import STRING_TO_TYPE, TYPE_TO_STRING, BaseProcessor
 
-
 LOGGER = logging.getLogger(__file__)
 
 
@@ -133,14 +132,21 @@ class PostHocProbabilisticProcessor(BaseProcessor):
         if self.nonconformity_score in [NonconformityScores.ERROR.value]:
             self.critical_size = 2 * self.critical_size
 
-        if self.method not in [PostHocProbabilisticMethod.CONFORMAL.value, PostHocProbabilisticMethod.GAUSSIAN.value]:
-            raise ValueError(f"Provided Post Hoc probabilistic method {self.method} is not valid.")
+        if self.method not in [
+            PostHocProbabilisticMethod.CONFORMAL.value,
+            PostHocProbabilisticMethod.GAUSSIAN.value,
+        ]:
+            raise ValueError(
+                f"Provided Post Hoc probabilistic method {self.method} is not valid."
+            )
 
         if self.nonconformity_score not in [
             NonconformityScores.ABSOLUTE_ERROR.value,
             NonconformityScores.ERROR.value,
         ]:
-            raise ValueError(f"Provided nonconformity_score {self.nonconformity_score} is not valid.")
+            raise ValueError(
+                f"Provided nonconformity_score {self.nonconformity_score} is not valid."
+            )
 
         self.weighting = weighting
         self.weighting_params = weighting_params
@@ -159,7 +165,9 @@ class PostHocProbabilisticProcessor(BaseProcessor):
                     threshold_function=self.threshold_function,
                 )
             elif self.method == PostHocProbabilisticMethod.GAUSSIAN.value:
-                self.model = PostHocGaussian(window_size=self.window_size, quantiles=self.quantiles)
+                self.model = PostHocGaussian(
+                    window_size=self.window_size, quantiles=self.quantiles
+                )
             else:
                 raise ValueError(f"Invalid method provided {self.method}")
 
@@ -231,7 +239,10 @@ class PostHocProbabilisticProcessor(BaseProcessor):
                 elif isinstance(value, (np.integer, np.floating)):
                     dictionary[key] = serialize_np_scalar(value)
                 elif isinstance(value, list):
-                    dictionary[key] = [vv.tolist() if isinstance(vv, np.ndarray) else vv for vv in value]
+                    dictionary[key] = [
+                        vv.tolist() if isinstance(vv, np.ndarray) else vv
+                        for vv in value
+                    ]
                 elif isinstance(value, dict):
                     dictionary[key] = recursive_check_ndarray(value)
 
@@ -251,7 +262,9 @@ class PostHocProbabilisticProcessor(BaseProcessor):
         return json.dumps(dictionary, indent=2, sort_keys=True) + "\n"
 
     @classmethod
-    def from_dict(cls, feature_extractor_dict: Dict[str, Any], **kwargs) -> "PreTrainedFeatureExtractor":
+    def from_dict(
+        cls, feature_extractor_dict: Dict[str, Any], **kwargs
+    ) -> "PreTrainedFeatureExtractor":
         """
         Instantiates a type of [`~feature_extraction_utils.FeatureExtractionMixin`] from a Python dictionary of
         parameters.
@@ -284,7 +297,12 @@ class PostHocProbabilisticProcessor(BaseProcessor):
 
             key = json.loads(key)
             if isinstance(key, (Tuple, List)):
-                return tuple([STRING_TO_TYPE[k_type](k_item) for k_item, k_type in zip(key, key_types)])
+                return tuple(
+                    [
+                        STRING_TO_TYPE[k_type](k_item)
+                        for k_item, k_type in zip(key, key_types)
+                    ]
+                )
             else:
                 return STRING_TO_TYPE[key_types[0]](key)
 
@@ -296,16 +314,18 @@ class PostHocProbabilisticProcessor(BaseProcessor):
             if id_types:
                 feature_extractor_dict["model"] = {}
                 for k, v in model.items():
-                    feature_extractor_dict["model"][deserialize_key(k, key_types=id_types)] = deserialize_helper(
-                        v, method
-                    )
+                    feature_extractor_dict["model"][
+                        deserialize_key(k, key_types=id_types)
+                    ] = deserialize_helper(v, method)
             else:
                 feature_extractor_dict["model"] = deserialize_helper(model, method)
 
         return super().from_dict(feature_extractor_dict, **kwargs)
 
     @classmethod
-    def _get_numpy_input(cls, df: pd.DataFrame, id_columns: List[str] = []) -> np.ndarray:
+    def _get_numpy_input(
+        cls, df: pd.DataFrame, id_columns: List[str] = []
+    ) -> np.ndarray:
         """Convert dataframe output from the forecasting pipeline in the numpy array format needed
         for conformal.
 
@@ -372,28 +392,42 @@ class PostHocProbabilisticProcessor(BaseProcessor):
         """
 
         unique_ids = self._get_unique_id_values(
-            data=y_cal_pred, id_column_values=id_column_values, id_columns=self.id_columns
+            data=y_cal_pred,
+            id_column_values=id_column_values,
+            id_columns=self.id_columns,
         )
 
         if isinstance(y_cal_pred, pd.DataFrame):
-            id_column_values = y_cal_pred[self.id_columns].values if self.id_columns else None
+            id_column_values = (
+                y_cal_pred[self.id_columns].values if self.id_columns else None
+            )
             y_cal_pred = self._get_numpy_input(y_cal_pred, id_columns=self.id_columns)
 
         if isinstance(y_cal_gt, pd.DataFrame):
             y_cal_gt = self._get_numpy_input(y_cal_gt, id_columns=self.id_columns)
 
-        if (isinstance(y_cal_pred, pd.DataFrame) and not isinstance(y_cal_gt, pd.DataFrame)) or (
-            not isinstance(y_cal_pred, pd.DataFrame) and isinstance(y_cal_gt, pd.DataFrame)
+        if (
+            isinstance(y_cal_pred, pd.DataFrame)
+            and not isinstance(y_cal_gt, pd.DataFrame)
+        ) or (
+            not isinstance(y_cal_pred, pd.DataFrame)
+            and isinstance(y_cal_gt, pd.DataFrame)
         ):
-            raise ValueError("When one of y_cal_gt or y_cal_pred is a dataframe both are expected to be a dataframe.")
+            raise ValueError(
+                "When one of y_cal_gt or y_cal_pred is a dataframe both are expected to be a dataframe."
+            )
 
         # to do?: ensure that y_cal_pred / y_cal_gt are ordered similarly (same dim and same id column values)
 
         if len(y_cal_pred.shape) != 3:
-            raise ValueError("y_cal_pred should have 3 dimensions: nsamples x forecast_horizon x number_features")
+            raise ValueError(
+                "y_cal_pred should have 3 dimensions: nsamples x forecast_horizon x number_features"
+            )
 
         if len(y_cal_gt.shape) != 3:
-            raise ValueError("y_cal_gt should have 3 dimensions: nsamples x forecast_horizon x number_features")
+            raise ValueError(
+                "y_cal_gt should have 3 dimensions: nsamples x forecast_horizon x number_features"
+            )
 
         if id_column_values is None:
             self.model.fit(
@@ -405,7 +439,9 @@ class PostHocProbabilisticProcessor(BaseProcessor):
             ### Initialize and fit a dictionary of models ###
             self.model = {}
             for g in unique_ids:
-                idx = np.where(np.all(id_column_values == g, axis=1))[0]  # indices for this group
+                idx = np.where(np.all(id_column_values == g, axis=1))[
+                    0
+                ]  # indices for this group
                 g = tuple(g)  # tuple(gg.item() for gg in g)
                 y_cal_pred_g, y_cal_gt_g = y_cal_pred[idx], y_cal_gt[idx]
                 if y_cal_pred_g.shape[0] < self.critical_size:
@@ -422,7 +458,9 @@ class PostHocProbabilisticProcessor(BaseProcessor):
                         threshold_function=self.threshold_function,
                     )
                 elif self.method == PostHocProbabilisticMethod.GAUSSIAN.value:
-                    self.model[g] = PostHocGaussian(window_size=self.window_size, quantiles=self.quantiles)
+                    self.model[g] = PostHocGaussian(
+                        window_size=self.window_size, quantiles=self.quantiles
+                    )
                 self.model[g].fit(
                     y_cal_gt=y_cal_gt_g,
                     y_cal_pred=y_cal_pred_g,
@@ -447,11 +485,15 @@ class PostHocProbabilisticProcessor(BaseProcessor):
         """
 
         unique_ids = self._get_unique_id_values(
-            data=y_test_pred, id_column_values=id_column_values, id_columns=self.id_columns
+            data=y_test_pred,
+            id_column_values=id_column_values,
+            id_columns=self.id_columns,
         )
 
         if isinstance(y_test_pred, pd.DataFrame):
-            id_column_values = y_test_pred[self.id_columns].values if self.id_columns else None
+            id_column_values = (
+                y_test_pred[self.id_columns].values if self.id_columns else None
+            )
             y_test_pred = self._get_numpy_input(y_test_pred, id_columns=self.id_columns)
 
         if len(quantiles) == 0:
@@ -461,7 +503,14 @@ class PostHocProbabilisticProcessor(BaseProcessor):
             len(y_test_pred.shape) == 3
         ), " y_test_pred should have 3 dimensions : nsamples x forecast_horizon x number_features"
 
-        y_test_prob_pred = np.zeros([y_test_pred.shape[0], y_test_pred.shape[1], y_test_pred.shape[2], len(quantiles)])
+        y_test_prob_pred = np.zeros(
+            [
+                y_test_pred.shape[0],
+                y_test_pred.shape[1],
+                y_test_pred.shape[2],
+                len(quantiles),
+            ]
+        )
         if id_column_values is None:
             assert not isinstance(
                 self.model, dict
@@ -491,18 +540,32 @@ class PostHocProbabilisticProcessor(BaseProcessor):
                     ]:
                         if q < 0.5:
                             q_pi_error_rate = q * 2
-                            output_q = model.predict(y_test_pred_g, false_alarm=q_pi_error_rate)
-                            y_test_prob_pred[idx, :, :, ix_q] = output_q["prediction_interval"]["y_low"]
+                            output_q = model.predict(
+                                y_test_pred_g, false_alarm=q_pi_error_rate
+                            )
+                            y_test_prob_pred[idx, :, :, ix_q] = output_q[
+                                "prediction_interval"
+                            ]["y_low"]
                         elif q > 0.5:
                             q_pi_error_rate = (1 - q) * 2
-                            output_q = model.predict(y_test_pred_g, false_alarm=q_pi_error_rate)
-                            y_test_prob_pred[idx, :, :, ix_q] = output_q["prediction_interval"]["y_high"]
+                            output_q = model.predict(
+                                y_test_pred_g, false_alarm=q_pi_error_rate
+                            )
+                            y_test_prob_pred[idx, :, :, ix_q] = output_q[
+                                "prediction_interval"
+                            ]["y_high"]
                         else:
-                            if model.nonconformity_score in [NonconformityScores.ERROR.value]:
+                            if model.nonconformity_score in [
+                                NonconformityScores.ERROR.value
+                            ]:
                                 q_pi_error_rate = 0.5
                                 # print('Quantile q = ',q_pi_error_rate)
-                                output_q = model.predict(y_test_pred_g, false_alarm=2 * q_pi_error_rate)
-                                y_test_prob_pred[idx, :, :, ix_q] = output_q["prediction_interval"]["y_high"]
+                                output_q = model.predict(
+                                    y_test_pred_g, false_alarm=2 * q_pi_error_rate
+                                )
+                                y_test_prob_pred[idx, :, :, ix_q] = output_q[
+                                    "prediction_interval"
+                                ]["y_high"]
                             else:
                                 y_test_prob_pred[idx, :, :, ix_q] = y_test_pred_g
 
@@ -558,7 +621,9 @@ class PostHocProbabilisticProcessor(BaseProcessor):
                 if timestamps is not None:
                     timestamps_g = timestamps[idx]
 
-                self.model.update(y_gt=y_gt_g, y_pred=y_pred_g, X=X_g, timestamps=timestamps_g)
+                self.model.update(
+                    y_gt=y_gt_g, y_pred=y_pred_g, X=X_g, timestamps=timestamps_g
+                )
 
         return self
 
@@ -599,7 +664,11 @@ class PostHocProbabilisticProcessor(BaseProcessor):
                 NonconformityScores.ERROR.value,
             ]:
                 output = self.model.predict(
-                    y_pred=y_pred, y_gt=y_gt, X=X, timestamps=timestamps, false_alarm=significance
+                    y_pred=y_pred,
+                    y_gt=y_gt,
+                    X=X,
+                    timestamps=timestamps,
+                    false_alarm=significance,
                 )
                 outliers_scores = output["outliers_scores"]
 
@@ -616,17 +685,25 @@ class PostHocProbabilisticProcessor(BaseProcessor):
                         outliers_scores, aggregation=aggregation
                     )  # aligns forecast for the same sample
                     filter = np.isnan(outliers_scores)
-                    outliers = np.array(np.array(outliers_scores) <= significance).astype("float")
+                    outliers = np.array(
+                        np.array(outliers_scores) <= significance
+                    ).astype("float")
                     outliers[filter] = np.nan
 
                 elif isinstance(aggregation, int):
-                    outliers_scores = self.forecast_horizon_aggregation(outliers_scores, aggregation=aggregation)
+                    outliers_scores = self.forecast_horizon_aggregation(
+                        outliers_scores, aggregation=aggregation
+                    )
                     # outliers_scores = outliers_scores[:, aggregation, :]
-                    outliers = np.array(np.array(outliers_scores) <= significance).astype("int")
+                    outliers = np.array(
+                        np.array(outliers_scores) <= significance
+                    ).astype("int")
 
                 elif isinstance(aggregation, str):
                     if aggregation_axis is None:
-                        raise ValueError("aggregation_axis must be specified when aggregation is a string")
+                        raise ValueError(
+                            "aggregation_axis must be specified when aggregation is a string"
+                        )
 
                     if isinstance(aggregation_axis, int):
                         aggregation_axis = (aggregation_axis,)
@@ -634,25 +711,41 @@ class PostHocProbabilisticProcessor(BaseProcessor):
                     ### If aggregation across forecast horizon (axis = 1) was selected
                     if 1 in aggregation_axis:
                         aggregation_axis = tuple(x for x in aggregation_axis if x != 1)
-                        outliers_scores = self.forecast_horizon_aggregation(outliers_scores, aggregation=aggregation)
+                        outliers_scores = self.forecast_horizon_aggregation(
+                            outliers_scores, aggregation=aggregation
+                        )
                         if aggregation_axis:
                             outliers_scores = outliers_scores[:, np.newaxis, :]
 
                     ### If aggreagtion axis for other dimension != 1 were selected
                     if aggregation_axis:
                         if aggregation == "mean":
-                            outliers_scores = np.mean(outliers_scores, axis=aggregation_axis)
+                            outliers_scores = np.mean(
+                                outliers_scores, axis=aggregation_axis
+                            )
                         elif aggregation == "median":
-                            outliers_scores = np.median(outliers_scores, axis=aggregation_axis)
+                            outliers_scores = np.median(
+                                outliers_scores, axis=aggregation_axis
+                            )
                         elif aggregation == "max":
-                            outliers_scores = np.max(outliers_scores, axis=aggregation_axis)
+                            outliers_scores = np.max(
+                                outliers_scores, axis=aggregation_axis
+                            )
                         elif aggregation == "min":
-                            outliers_scores = np.min(outliers_scores, axis=aggregation_axis)
+                            outliers_scores = np.min(
+                                outliers_scores, axis=aggregation_axis
+                            )
                         else:
-                            raise ValueError(f"Unsupported aggregation method: {aggregation}")
-                    outliers = np.array(np.array(outliers_scores) <= significance).astype("int")
+                            raise ValueError(
+                                f"Unsupported aggregation method: {aggregation}"
+                            )
+                    outliers = np.array(
+                        np.array(outliers_scores) <= significance
+                    ).astype("int")
                 else:
-                    raise TypeError("aggregation must be either an int or a supported aggregation string")
+                    raise TypeError(
+                        "aggregation must be either an int or a supported aggregation string"
+                    )
 
                 if outlier_label:
                     return np.stack([outliers_scores, outliers], axis=-1)
@@ -675,7 +768,9 @@ class PostHocProbabilisticProcessor(BaseProcessor):
 
         if isinstance(aggregation, int):  ## choose a particular forecast horizon score
             out = aligned[:, aggregation, :]
-            for h in range(aggregation + 1):  # aligned in an upper triangular NaNs matrix
+            for h in range(
+                aggregation + 1
+            ):  # aligned in an upper triangular NaNs matrix
                 out[h, :] = aligned[h, h, :]
             return out
 
@@ -694,7 +789,9 @@ class PostHocProbabilisticProcessor(BaseProcessor):
         elif aggregation is None:  # just return aligned arrays
             return aligned
         else:
-            raise TypeError("aggregation must be either an int or a supported aggregation string")
+            raise TypeError(
+                "aggregation must be either an int or a supported aggregation string"
+            )
 
 
 def absolute_error(y: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
@@ -710,7 +807,10 @@ def absolute_error(y: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
     """
 
     assert y.shape == y_pred.shape, (
-        "Shapes of y and y_pred do not match: y.shape, y_pred.shape = " + str(y.shape) + ";" + str(y_pred.shape)
+        "Shapes of y and y_pred do not match: y.shape, y_pred.shape = "
+        + str(y.shape)
+        + ";"
+        + str(y_pred.shape)
     )
     error = np.abs(y - y_pred)
     if len(error.shape) > 1:
@@ -730,7 +830,10 @@ def error(y: np.ndarray, y_pred: np.ndarray) -> np.ndarray:
         np.ndarray: signed error. If inputs are multi-dimensional, returns the mean absolute error over the last axis.
     """
     assert y.shape == y_pred.shape, (
-        "Shapes of y and y_pred do not match: y.shape, y_pred.shape = " + str(y.shape) + ";" + str(y_pred.shape)
+        "Shapes of y and y_pred do not match: y.shape, y_pred.shape = "
+        + str(y.shape)
+        + ";"
+        + str(y_pred.shape)
     )
     error = y - y_pred
     if len(error.shape) > 1:
@@ -787,11 +890,16 @@ def conformal_set(
     if nonconformity_score == NonconformityScores.ABSOLUTE_ERROR.value:
         return {"y_low": y_pred - score_threshold, "y_high": y_pred + score_threshold}
     if nonconformity_score == NonconformityScores.ERROR.value:
-        return {"y_low": score_threshold[0] + y_pred, "y_high": score_threshold[1] + y_pred}
+        return {
+            "y_low": score_threshold[0] + y_pred,
+            "y_high": score_threshold[1] + y_pred,
+        }
 
 
 class PostHocGaussian:
-    def __init__(self, window_size=None, quantiles=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]):
+    def __init__(
+        self, window_size=None, quantiles=[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    ):
         self.window_size = window_size
         self.quantiles = quantiles
         self.critical_size = 1
@@ -829,7 +937,9 @@ class PostHocGaussian:
         ), " y_cal_gt should have 3 dimensions : nsamples x forecast_horizon x number_features"
 
         self.errors = y_cal_gt[-window_size:] - y_cal_pred[-window_size:]
-        self.variance = np.sum(self.errors**2, axis=0) / (len(self.errors) - 1)  # dimension should be
+        self.variance = np.sum(self.errors**2, axis=0) / (
+            len(self.errors) - 1
+        )  # dimension should be
 
     def update(self, y_gt: np.ndarray, y_pred: np.ndarray):
         """
@@ -861,7 +971,9 @@ class PostHocGaussian:
         assert (
             len(y_test_pred.shape) == 3
         ), " y_test_pred should have 3 dimensions: nsamples x forecast_horizon x number_features"
-        std_devs = np.sqrt(self.variance)[..., None]  # Standard deviation for each distribution
+        std_devs = np.sqrt(self.variance)[
+            ..., None
+        ]  # Standard deviation for each distribution
         quantiles = norm.ppf(quantiles) * std_devs  # Compute quantiles
         y_test_prob_pred = y_test_pred[..., np.newaxis] + quantiles[np.newaxis, ...]
         return y_test_prob_pred
@@ -960,13 +1072,17 @@ class WeightedConformalForecasterWrapper:
             "window_size": self.window_size,
             "threshold_function": self.threshold_function,
             "weights_adaptive": self.weights_adaptive,
-            "univariate_wrappers": {json.dumps(k): v.to_dict() for k, v in self.univariate_wrappers.items()},
+            "univariate_wrappers": {
+                json.dumps(k): v.to_dict() for k, v in self.univariate_wrappers.items()
+            },
         }
 
         return output
 
     @classmethod
-    def from_dict(cls, params: Dict[str, Any], **kwargs) -> "WeightedConformalForecasterWrapper":
+    def from_dict(
+        cls, params: Dict[str, Any], **kwargs
+    ) -> "WeightedConformalForecasterWrapper":
         """
         Instantiates a type of [`~WeightedConformalForecasterWrapper`] from a Python dictionary of
         parameters.
@@ -1007,7 +1123,11 @@ class WeightedConformalForecasterWrapper:
         return obj
 
     def fit(
-        self, y_cal_gt: np.ndarray, y_cal_pred: np.ndarray, X_cal: np.ndarray = None, cal_timestamps: np.ndarray = None
+        self,
+        y_cal_gt: np.ndarray,
+        y_cal_pred: np.ndarray,
+        X_cal: np.ndarray = None,
+        cal_timestamps: np.ndarray = None,
     ):
         """
         Fit the Weighted Split Conformal Forecasting method.
@@ -1023,13 +1143,17 @@ class WeightedConformalForecasterWrapper:
             self.window_size = y_cal_pred.shape[0]
 
         window_critical_size = int(np.ceil(1 / self.false_alarm))
-        if (self.window_size < window_critical_size) and (y_cal_pred.shape[0] >= window_critical_size):
+        if (self.window_size < window_critical_size) and (
+            y_cal_pred.shape[0] >= window_critical_size
+        ):
             self.window_size = window_critical_size
 
         if self.window_size < window_critical_size:
-            raise ValueError(f"""Not enough calibration points for the
+            raise ValueError(
+                f"""Not enough calibration points for the
                              desired error rate. For an error rate of {self.false_alarm}
-                             we need at least {window_critical_size} calibration points""")
+                             we need at least {window_critical_size} calibration points"""
+            )
 
         self.univariate_wrappers = {}
         for ix_f in range(y_cal_pred.shape[2]):
@@ -1041,7 +1165,10 @@ class WeightedConformalForecasterWrapper:
             # Copy the dictionary
             weighting_params = self.weighting_params.copy()
             if "optimization" in self.weighting_params.keys():
-                if self.weighting_params["optimization"] == WeightingOptimization.WASS1.value:  # "wass1":
+                if (
+                    self.weighting_params["optimization"]
+                    == WeightingOptimization.WASS1.value
+                ):  # "wass1":
                     weighting_params.pop("optimization", None)
                     """
                     Fitting Weights
@@ -1060,7 +1187,10 @@ class WeightedConformalForecasterWrapper:
                     n_batch_update = int((critical_efficient_size + 2))
                     n_updates = 100
                     n_cal_optimization = (n_updates - 1) * stride + n_batch_update
-                    n_cal_init = np.maximum(int(critical_efficient_size) * 2, cal_scores.shape[0] - n_cal_optimization)
+                    n_cal_init = np.maximum(
+                        int(critical_efficient_size) * 2,
+                        cal_scores.shape[0] - n_cal_optimization,
+                    )
                     lr = 0.001
 
                     if cal_scores.shape[0] >= n_cal_init + n_batch_update:
@@ -1095,12 +1225,21 @@ class WeightedConformalForecasterWrapper:
                     online_size=self.online_size,
                 )
                 self.univariate_wrappers[ix_h, ix_f].fit(
-                    y_cal_gt[:, ix_h, ix_f], y_cal_pred[:, ix_h, ix_f], X_cal=X_cal, cal_timestamps=cal_timestamps_i
+                    y_cal_gt[:, ix_h, ix_f],
+                    y_cal_pred[:, ix_h, ix_f],
+                    X_cal=X_cal,
+                    cal_timestamps=cal_timestamps_i,
                 )
                 if cal_weights is not None:
                     self.univariate_wrappers[ix_h, ix_f].weights.append(cal_weights)
 
-    def update(self, y_gt: np.ndarray, y_pred: np.ndarray, X: np.ndarray = None, timestamps: np.ndarray = None):
+    def update(
+        self,
+        y_gt: np.ndarray,
+        y_pred: np.ndarray,
+        X: np.ndarray = None,
+        timestamps: np.ndarray = None,
+    ):
         """
         Update the nonconformity scores and threshold function.
 
@@ -1120,7 +1259,11 @@ class WeightedConformalForecasterWrapper:
                 y_gt_i = y_gt[:, ix_h, ix_f]
 
                 _ = self.univariate_wrappers[ix_h, ix_f].predict(
-                    y_pred[:, ix_h, ix_f], y_gt=y_gt_i, X=X, timestamps=timestamps_i, update=True
+                    y_pred[:, ix_h, ix_f],
+                    y_gt=y_gt_i,
+                    X=X,
+                    timestamps=timestamps_i,
+                    update=True,
                 )
 
     def predict(
@@ -1152,8 +1295,13 @@ class WeightedConformalForecasterWrapper:
         """
 
         output = {}
-        if self.nonconformity_score in [s.value for s in NonconformityScores]:  #'absolute_error':
-            output["prediction_interval"] = {"y_low": np.zeros_like(y_pred), "y_high": np.zeros_like(y_pred)}
+        if self.nonconformity_score in [
+            s.value for s in NonconformityScores
+        ]:  #'absolute_error':
+            output["prediction_interval"] = {
+                "y_low": np.zeros_like(y_pred),
+                "y_high": np.zeros_like(y_pred),
+            }
 
         if y_gt is not None:
             output["outliers"] = np.zeros_like(y_pred)
@@ -1178,13 +1326,21 @@ class WeightedConformalForecasterWrapper:
                     update=update,
                 )
 
-                if self.nonconformity_score in [s.value for s in NonconformityScores]:  # 'absolute_error':
-                    output["prediction_interval"]["y_low"][:, ix_h, ix_f] = output_i["prediction_interval"]["y_low"]
-                    output["prediction_interval"]["y_high"][:, ix_h, ix_f] = output_i["prediction_interval"]["y_high"]
+                if self.nonconformity_score in [
+                    s.value for s in NonconformityScores
+                ]:  # 'absolute_error':
+                    output["prediction_interval"]["y_low"][:, ix_h, ix_f] = output_i[
+                        "prediction_interval"
+                    ]["y_low"]
+                    output["prediction_interval"]["y_high"][:, ix_h, ix_f] = output_i[
+                        "prediction_interval"
+                    ]["y_high"]
 
                 if y_gt is not None:
                     output["outliers"][:, ix_h, ix_f] = output_i["outliers"]
-                    output["outliers_scores"][:, ix_h, ix_f] = output_i["outliers_scores"]
+                    output["outliers_scores"][:, ix_h, ix_f] = output_i[
+                        "outliers_scores"
+                    ]
 
         return output
 
@@ -1284,7 +1440,13 @@ class WeightedConformalWrapper:
 
         params_copy = params.copy()
 
-        save_attrs = ["cal_scores", "weights", "cal_X", "cal_timestamps", "score_threshold"]
+        save_attrs = [
+            "cal_scores",
+            "weights",
+            "cal_X",
+            "cal_timestamps",
+            "score_threshold",
+        ]
         save_attrs_dict = {}
         for attr in save_attrs:
             save_attrs_dict[attr] = params_copy.pop(attr)
@@ -1345,8 +1507,12 @@ class WeightedConformalWrapper:
             cal_weights = self.get_weights()
             self.weights.append(cal_weights)
             # self.weights.append(cal_weights[-self.cal_scores.shape[0]:])
-            if self.threshold_function == ThresholdFunction.WEIGHTING.value:  #  "weighting":
-                self.score_threshold = self.score_threshold_func(cal_weights, false_alarm=self.false_alarm)
+            if (
+                self.threshold_function == ThresholdFunction.WEIGHTING.value
+            ):  #  "weighting":
+                self.score_threshold = self.score_threshold_func(
+                    cal_weights, false_alarm=self.false_alarm
+                )
         assert (
             np.sum(cal_weights) >= critical_efficient_size
         ), " The effective size is too small for the desired false alarm of {}, the calibration set should be larger than {} ".format(
@@ -1390,7 +1556,9 @@ class WeightedConformalWrapper:
 
                 if self.weighting == Weighting.EXPONENTIAL_DECAY.value:
                     decay_param = self.weighting_params.get("decay_param", 0.99)
-                    return decay_param ** (self.window_size - np.arange(self.window_size))
+                    return decay_param ** (
+                        self.window_size - np.arange(self.window_size)
+                    )
 
     def score_threshold_func(
         self,
@@ -1428,11 +1596,15 @@ class WeightedConformalWrapper:
         n_cal_scores = cal_scores.shape[0]
         min_required = np.ceil(1 / false_alarm)
         if n_cal_scores < min_required:
-            raise ValueError(f"""There are not enough calibration scores for error rate of {false_alarm}.
+            raise ValueError(
+                f"""There are not enough calibration scores for error rate of {false_alarm}.
                              {n_cal_scores} provied but we require {min_required}, try increasing the
-                             the number of rows of calibration data.""")
+                             the number of rows of calibration data."""
+            )
         if self.threshold_function == ThresholdFunction.WEIGHTING.value:  # "weighting":
-            if self.nonconformity_score in [s.value for s in PositiveNonconformityScores]:
+            if self.nonconformity_score in [
+                s.value for s in PositiveNonconformityScores
+            ]:
                 if len(cal_weights.shape) == 1:  # same weights for all y
                     score_threshold = weighted_conformal_quantile(
                         np.append(cal_scores, np.array([np.inf]), axis=0),
@@ -1443,7 +1615,9 @@ class WeightedConformalWrapper:
                     for i in range(cal_weights.shape[0]):
                         score_threshold_i = weighted_conformal_quantile(
                             np.append(cal_scores, np.array([np.inf]), axis=0),
-                            np.append(cal_weights[i, -n_cal_scores:], np.array([1]), axis=0),
+                            np.append(
+                                cal_weights[i, -n_cal_scores:], np.array([1]), axis=0
+                            ),
                             alpha=false_alarm,
                         )
                         score_threshold.append(score_threshold_i)
@@ -1451,18 +1625,26 @@ class WeightedConformalWrapper:
 
             elif self.nonconformity_score == NonconformityScores.ERROR.value:
                 if len(cal_weights.shape) == 1:  # same weights for all y
-                    cal_scores_infty = np.append(cal_scores, np.array([np.inf, -np.inf]), axis=0)
+                    cal_scores_infty = np.append(
+                        cal_scores, np.array([np.inf, -np.inf]), axis=0
+                    )
                     # cal_scores_infty = np.append(np.array([]),cal_scores_infty,axis=0)
 
-                    cal_weights_infty = np.append(cal_weights[-n_cal_scores:], np.array([1, 1]), axis=0)
+                    cal_weights_infty = np.append(
+                        cal_weights[-n_cal_scores:], np.array([1, 1]), axis=0
+                    )
                     # cal_weights_infty = np.append(np.array([1]),cal_weights_infty,axis=0)
 
                     score_threshold_low = weighted_conformal_quantile(
-                        cal_scores_infty, cal_weights_infty, alpha=np.maximum(false_alarm / 2, 1 - (false_alarm / 2))
+                        cal_scores_infty,
+                        cal_weights_infty,
+                        alpha=np.maximum(false_alarm / 2, 1 - (false_alarm / 2)),
                     )
 
                     score_threshold_up = weighted_conformal_quantile(
-                        cal_scores_infty, cal_weights_infty, alpha=np.minimum(false_alarm / 2, 1 - (false_alarm / 2))
+                        cal_scores_infty,
+                        cal_weights_infty,
+                        alpha=np.minimum(false_alarm / 2, 1 - (false_alarm / 2)),
                     )
                     # if score_threshold_up >= score_threshold_low:
                     # print('SCORE UP LOWER THAN SCORE LOW!!')
@@ -1478,10 +1660,14 @@ class WeightedConformalWrapper:
 
                 else:
                     for i in range(cal_weights.shape[0]):
-                        cal_scores_infty = np.append(cal_scores, np.array([np.inf, -np.inf]), axis=0)
+                        cal_scores_infty = np.append(
+                            cal_scores, np.array([np.inf, -np.inf]), axis=0
+                        )
                         # cal_scores_infty = np.append(np.array([-np.inf]),cal_scores_infty,axis=0)
 
-                        cal_weights_infty = np.append(cal_weights[i, -n_cal_scores:], np.array([1, 1]), axis=0)
+                        cal_weights_infty = np.append(
+                            cal_weights[i, -n_cal_scores:], np.array([1, 1]), axis=0
+                        )
                         # cal_weights_infty = np.append(np.array([1]),cal_weights_infty,axis=0)
 
                         # score_threshold_i = weighted_conformal_quantile(np.append(cal_scores,np.array([np.inf]),axis=0),
@@ -1499,13 +1685,18 @@ class WeightedConformalWrapper:
                             cal_weights_infty,
                             alpha=np.minimum(false_alarm / 2, 1 - (false_alarm / 2)),
                         )
-                        score_threshold_i = [score_threshold_low_i, score_threshold_up_i]
+                        score_threshold_i = [
+                            score_threshold_low_i,
+                            score_threshold_up_i,
+                        ]
                         assert (
                             score_threshold_up_i >= score_threshold_low_i
                         ), " score_threshold_up is not greater than score_threshold_low"
 
                         score_threshold.append(score_threshold_i)
-                    score_threshold = np.array(score_threshold).transpose()  # first dimension is low/up score
+                    score_threshold = np.array(
+                        score_threshold
+                    ).transpose()  # first dimension is low/up score
 
             return score_threshold
 
@@ -1541,9 +1732,9 @@ class WeightedConformalWrapper:
             update = self.online
 
         # Weight Computation
-        cal_weights = self.get_weights(y_pred, X=X, timestamps=timestamps, false_alarm=false_alarm)[
-            -self.cal_scores.shape[0] :
-        ]
+        cal_weights = self.get_weights(
+            y_pred, X=X, timestamps=timestamps, false_alarm=false_alarm
+        )[-self.cal_scores.shape[0] :]
 
         # Score Threshold
         if (
@@ -1554,11 +1745,17 @@ class WeightedConformalWrapper:
             score_threshold = self.score_threshold
         else:
             score_threshold = self.score_threshold_func(
-                cal_weights, y_pred=y_pred, X=X, timestamps=timestamps, false_alarm=false_alarm
+                cal_weights,
+                y_pred=y_pred,
+                X=X,
+                timestamps=timestamps,
+                false_alarm=false_alarm,
             )
 
         # Prediction Interval
-        prediction_interval = conformal_set(y_pred, score_threshold, nonconformity_score=self.nonconformity_score)
+        prediction_interval = conformal_set(
+            y_pred, score_threshold, nonconformity_score=self.nonconformity_score
+        )
 
         output = {}
         if y_gt is not None:
@@ -1583,7 +1780,8 @@ class WeightedConformalWrapper:
                     test_ad_scores.append(ad_score)  # p-value (significance)
             elif self.nonconformity_score in [NonconformityScores.ERROR.value]:
                 test_outliers = np.array(
-                    (test_scores < score_threshold[0]) | (test_scores > score_threshold[1])
+                    (test_scores < score_threshold[0])
+                    | (test_scores > score_threshold[1])
                 ).astype("int")
                 for score in test_scores:
                     ad_score = weighted_conformal_alpha(
@@ -1593,7 +1791,9 @@ class WeightedConformalWrapper:
                     )
                     # test_ad_scores.append(1 - ad_score)
                     # test_ad_scores.append(ad_score)  # p-value (significance)
-                    test_ad_scores.append(np.minimum(float(ad_score), 1 - float(ad_score)))
+                    test_ad_scores.append(
+                        np.minimum(float(ad_score), 1 - float(ad_score))
+                    )
 
             # Update
             if update:
@@ -1648,7 +1848,9 @@ class WeightedConformalWrapper:
             output = None
             for ix_b in range(n_batches):
                 ix_ini = int(ix_b * self.online_size)
-                ix_end = np.minimum(int(ix_b * self.online_size + self.online_size), y_pred.shape[0])
+                ix_end = np.minimum(
+                    int(ix_b * self.online_size + self.online_size), y_pred.shape[0]
+                )
 
                 y_pred_b = y_pred[ix_ini:ix_end]
                 y_gt_b = y_gt[ix_ini:ix_end]
@@ -1659,7 +1861,12 @@ class WeightedConformalWrapper:
                 if timestamps is not None:
                     timestamps_b = timestamps[ix_ini:ix_end]
                 output_b = self.predict_batch(
-                    y_pred_b, y_gt=y_gt_b, X=X_b, timestamps=timestamps_b, false_alarm=false_alarm, update=update
+                    y_pred_b,
+                    y_gt=y_gt_b,
+                    X=X_b,
+                    timestamps=timestamps_b,
+                    false_alarm=false_alarm,
+                    update=update,
                 )
                 if output is None:
                     output = output_b.copy()
@@ -1667,12 +1874,21 @@ class WeightedConformalWrapper:
                     for k in output_b.keys():
                         if k == "prediction_interval":
                             for k2 in output_b[k].keys():
-                                output[k][k2] = np.append(output[k][k2], np.array(output_b[k][k2]), axis=0)
+                                output[k][k2] = np.append(
+                                    output[k][k2], np.array(output_b[k][k2]), axis=0
+                                )
                         else:
-                            output[k] = np.append(output[k], np.array(output_b[k]), axis=0)
+                            output[k] = np.append(
+                                output[k], np.array(output_b[k]), axis=0
+                            )
         else:
             output = self.predict_batch(
-                y_pred, y_gt=y_gt, X=X, timestamps=timestamps, false_alarm=false_alarm, update=update
+                y_pred,
+                y_gt=y_gt,
+                X=X,
+                timestamps=timestamps,
+                false_alarm=false_alarm,
+                update=update,
             )
 
         return output
@@ -1701,19 +1917,32 @@ class WeightedConformalWrapper:
             false_alarm = self.false_alarm
 
         # Weight Computation
-        cal_weights = self.get_weights(y_pred, X=X, timestamps=timestamps, false_alarm=false_alarm)
+        cal_weights = self.get_weights(
+            y_pred, X=X, timestamps=timestamps, false_alarm=false_alarm
+        )
 
         # Score Threshold
         score_threshold = self.score_threshold_func(
-            cal_weights, y_pred=y_pred, X=X, timestamps=timestamps, false_alarm=false_alarm
+            cal_weights,
+            y_pred=y_pred,
+            X=X,
+            timestamps=timestamps,
+            false_alarm=false_alarm,
         )
 
         # Prediction Interval
-        prediction_interval = conformal_set(y_pred, score_threshold, nonconformity_score=self.nonconformity_score)
+        prediction_interval = conformal_set(
+            y_pred, score_threshold, nonconformity_score=self.nonconformity_score
+        )
 
         return prediction_interval
 
-    def update(self, scores: np.ndarray, X: Optional[np.ndarray] = None, timestamps: Optional[np.ndarray] = None):
+    def update(
+        self,
+        scores: np.ndarray,
+        X: Optional[np.ndarray] = None,
+        timestamps: Optional[np.ndarray] = None,
+    ):
         """
         Update the nonconformity scores and threshold function.
 
@@ -1736,7 +1965,9 @@ class WeightedConformalWrapper:
         if self.weighting == Weighting.UNIFORM.value:  # "uniform":
             cal_weights = self.get_weights()
             if self.threshold_function == ThresholdFunction.WEIGHTING.value:
-                self.score_threshold = self.score_threshold_func(cal_weights, false_alarm=self.false_alarm)
+                self.score_threshold = self.score_threshold_func(
+                    cal_weights, false_alarm=self.false_alarm
+                )
 
 
 def weighted_conformal_quantile(
@@ -1765,7 +1996,9 @@ def weighted_conformal_quantile(
 
     assert np.max(weights) <= 1, "Maximum weight needs to be smaller or equal than 1"
     assert np.min(weights) >= 0, "Minimum weight needs to be greater or equal to 0"
-    assert weights.shape[0] == scores.shape[0], " Scores shape does not match weights shape"
+    assert (
+        weights.shape[0] == scores.shape[0]
+    ), " Scores shape does not match weights shape"
 
     """Add infinite score to the score list"""
     if conformal_correction:
@@ -1872,17 +2105,23 @@ class AdaptiveWeightedConformalScoreWrapper:
         self.weights_critical_norm = np.ceil(1 / self.false_alarm - 1)
 
         self.window_size = (
-            window_size if window_size is not None else int(np.maximum(5000, self.weights_critical_norm))
+            window_size
+            if window_size is not None
+            else int(np.maximum(5000, self.weights_critical_norm))
         )  # large memory
         if self.window_size is not None:
             assert (
                 self.window_size > self.weights_critical_norm
-            ), "Given the false alarm window size must be larger than {}".format(np.ceil(self.weights_critical_norm))
+            ), "Given the false alarm window size must be larger than {}".format(
+                np.ceil(self.weights_critical_norm)
+            )
 
         if "lr" not in self.weighting_params.keys():
             self.weighting_params["lr"] = 0.001
         if "n_batch_update" not in self.weighting_params.keys():
-            self.weighting_params["n_batch_update"] = int(self.weights_critical_norm * 4)
+            self.weighting_params["n_batch_update"] = int(
+                self.weights_critical_norm * 4
+            )
         if "stride" not in self.weighting_params.keys():
             self.weighting_params["stride"] = int(1)
         if "epochs" not in self.weighting_params.keys():
@@ -1899,7 +2138,9 @@ class AdaptiveWeightedConformalScoreWrapper:
         #     self.weighting_params["n_batch_update"] > self.weights_critical_norm
         # ), "Given the false alarm n_batch_update must be larger than {}".format(np.ceil(self.weights_critical_norm))
 
-    def fit(self, scores: np.ndarray, beta_prior: Optional[Tuple[float, float]] = None) -> np.ndarray:
+    def fit(
+        self, scores: np.ndarray, beta_prior: Optional[Tuple[float, float]] = None
+    ) -> np.ndarray:
         """
         Fit the model using calibration nonconformity scores.
 
@@ -1910,7 +2151,9 @@ class AdaptiveWeightedConformalScoreWrapper:
         """
         1. Add Calibration Scores
         """
-        assert scores.shape[0] > self.weights_critical_norm, "Provide a minimum of {} scores for fitting".format(
+        assert (
+            scores.shape[0] > self.weights_critical_norm
+        ), "Provide a minimum of {} scores for fitting".format(
             self.weights_critical_norm
         )
         self.cal_scores = torch.tensor(scores)
@@ -1927,7 +2170,9 @@ class AdaptiveWeightedConformalScoreWrapper:
             self.device = torch.device("cpu")
 
         self.weights_parameters = torch.nn.Parameter(w_init.to(self.device))
-        self.weights_optimizer = torch.optim.AdamW([self.weights_parameters], lr=self.weighting_params["lr"])
+        self.weights_optimizer = torch.optim.AdamW(
+            [self.weights_parameters], lr=self.weighting_params["lr"]
+        )
         # self.weights_optimizer = torch.optim.RMSprop([self.weights_parameters], lr=self.weighting_params["lr"])
 
         """
@@ -1935,7 +2180,9 @@ class AdaptiveWeightedConformalScoreWrapper:
         """
 
         # Expand to nxn by repeating along the row dimension
-        torch_scores_past = self.cal_scores.unsqueeze(0).repeat(scores.shape[0], 1)  # Shape: (n, n)
+        torch_scores_past = self.cal_scores.unsqueeze(0).repeat(
+            scores.shape[0], 1
+        )  # Shape: (n, n)
 
         with torch.no_grad():
             betas = (
@@ -1955,7 +2202,10 @@ class AdaptiveWeightedConformalScoreWrapper:
         return 1 - np.array(betas)
 
     def predict(
-        self, scores: np.ndarray, verbose: bool = False, beta_prior: Optional[Tuple[float, float]] = None
+        self,
+        scores: np.ndarray,
+        verbose: bool = False,
+        beta_prior: Optional[Tuple[float, float]] = None,
     ) -> np.ndarray:
         """
         Perform online prediction of conformal p-values for observed scores.
@@ -2000,15 +2250,21 @@ class AdaptiveWeightedConformalScoreWrapper:
             """Generate Matrix With Past Scores per batch observation and "present" scores to compute Wass1"""
             scores_concat_i = torch.cat((self.cal_scores, scores_new_i), dim=0)
             update_weights_feasible = len(scores_concat_i) >= n_min_update
-            n_batch_effective = n_batch if update_weights_feasible else scores_new_i.shape[0]
+            n_batch_effective = (
+                n_batch if update_weights_feasible else scores_new_i.shape[0]
+            )
             n_batch_effective = int(n_batch_effective)
             # print(ini_t_i,end_t_i, scores_concat_i.shape, n_batch_effective, self.cal_scores.shape[0], self.weights_critical_norm, n_min_update)
             # print('Update feasible :', update_weights_feasible)
-            scores_i = scores_concat_i[-n_batch_effective:].to(self.device)  # Scores to compute the Wass1 distance
+            scores_i = scores_concat_i[-n_batch_effective:].to(
+                self.device
+            )  # Scores to compute the Wass1 distance
             cal_context_available = len(scores_concat_i) - n_batch_effective
             scores_matrix = [
                 scores_concat_i[j - cal_context_available : j]
-                for j in range(len(scores_concat_i) - n_batch_effective, len(scores_concat_i))
+                for j in range(
+                    len(scores_concat_i) - n_batch_effective, len(scores_concat_i)
+                )
             ]
 
             scores_matrix = torch.stack(scores_matrix).to(self.device)
@@ -2070,7 +2326,9 @@ class AdaptiveWeightedConformalScoreWrapper:
                     with torch.no_grad():
                         self.weights_parameters.copy_(
                             project_l1_box_torch(
-                                self.weights_parameters, min_l1_norm=self.weights_critical_norm, max_value=1.0
+                                self.weights_parameters,
+                                min_l1_norm=self.weights_critical_norm,
+                                max_value=1.0,
                             )
                         )
                     if verbose:
@@ -2083,12 +2341,16 @@ class AdaptiveWeightedConformalScoreWrapper:
                             )
                         )
 
-                    self.weights_average = self.weights_average + self.weights_parameters.clone().detach()
+                    self.weights_average = (
+                        self.weights_average + self.weights_parameters.clone().detach()
+                    )
                     self.weights_average_count += 1
                     # self.weights_parameters.data.clamp_(0, 1.0)
                 losses.append(losses_i)
                 # self.cal_weights = self.weights_average.clone().detach().numpy()/self.weights_average_count
-                self.cal_weights = self.weights_parameters.clone().detach().cpu().numpy()
+                self.cal_weights = (
+                    self.weights_parameters.clone().detach().cpu().numpy()
+                )
             else:
                 if verbose:
                     LOGGER.info(
@@ -2103,7 +2365,9 @@ class AdaptiveWeightedConformalScoreWrapper:
                 # print('Cal scores size :', len(self.cal_scores))
                 # print('Minimum number of elements required are :', n_min_update, ' but in total we have :', scores_concat_i.shape[0])
             """ Update Past Calibration Scores """
-            self.cal_scores = torch.cat((self.cal_scores, scores_new_i[0:stride]), dim=0)
+            self.cal_scores = torch.cat(
+                (self.cal_scores, scores_new_i[0:stride]), dim=0
+            )
 
             if self.weighting_params["prior_past_weights_value"] == "proximity":
                 n = self.cal_scores.shape[0]
@@ -2168,7 +2432,9 @@ def get_beta(
     # Resolve (a_prior, b_prior) with clear precedence
     if beta_prior is not None:
         a_prior, b_prior = map(float, beta_prior)
-        if conformal_weights is not True:  # user explicitly changed legacy flag while providing beta_prior
+        if (
+            conformal_weights is not True
+        ):  # user explicitly changed legacy flag while providing beta_prior
             warnings.warn(
                 "`beta_prior` is provided and will override `conformal_weights`. "
                 "Remove or ignore `conformal_weights` to silence this warning.",
@@ -2187,9 +2453,13 @@ def get_beta(
     )
     assert (
         weights.max() <= 1 and weights.min() >= 0
-    ), "weights should be constrained between 0 and 1, got {} and {}".format(weights.max(), weights.min())
+    ), "weights should be constrained between 0 and 1, got {} and {}".format(
+        weights.max(), weights.min()
+    )
 
-    betas = (weights.unsqueeze(0) * (observed_scores <= test_scores.unsqueeze(1))).sum(1)
+    betas = (weights.unsqueeze(0) * (observed_scores <= test_scores.unsqueeze(1))).sum(
+        1
+    )
     weight_norm = weights.sum()
     # if conformal_weights:
     #     weight_norm = weight_norm + 1
@@ -2238,13 +2508,17 @@ def w1_distance_from_betas(beta: torch.Tensor) -> torch.Tensor:
     mask_left = beta < a
     mask_right = beta > b
 
-    val = torch.where(mask_left, left_val, torch.where(mask_right, right_val, middle_val))
+    val = torch.where(
+        mask_left, left_val, torch.where(mask_right, right_val, middle_val)
+    )
 
     # Summation over i=1..N gives W1 distance
     return val.sum()
 
 
-def get_w1_distance(test_scores, observed_scores, weights=None, conformal_weights=True) -> float:
+def get_w1_distance(
+    test_scores, observed_scores, weights=None, conformal_weights=True
+) -> float:
     """
     Compute the 1-Wasserstein distance (W1) between the empirical distribution of weighted conformal p-values and the uniform distribution on [0, 1].
 
@@ -2260,7 +2534,9 @@ def get_w1_distance(test_scores, observed_scores, weights=None, conformal_weight
         float: Scalar representing the 1-Wasserstein distance between the empirical p-value distribution and the uniform distribution on [0, 1].
     """
 
-    beta = get_beta(test_scores, observed_scores, weights, conformal_weights=conformal_weights)
+    beta = get_beta(
+        test_scores, observed_scores, weights, conformal_weights=conformal_weights
+    )
     # Sort beta to enforce monotonicity
     beta_sorted = torch.sort(beta)[0]
     return w1_distance_from_betas(beta_sorted)
@@ -2280,19 +2556,26 @@ def euclidean_proj_simplex_torch(vector: torch.Tensor, radius: int = 1) -> torch
     assert radius > 0, "radius parameter must be strictly positive"
     n = vector.shape[0]
     # Check if vector is on the simplex
-    if torch.isclose(vector.detach().clone().sum(), torch.tensor(radius)) and torch.all(vector >= 0):
+    if torch.isclose(vector.detach().clone().sum(), torch.tensor(radius)) and torch.all(
+        vector >= 0
+    ):
         return vector
     v_sorted, _ = torch.sort(vector, descending=True)  # Sort vector in decreasing order
     cum_vector = torch.cumsum(v_sorted, dim=0)
     rho = torch.nonzero(
-        v_sorted * torch.arange(1, n + 1, dtype=vector.dtype, device=vector.device) > (cum_vector - radius)
-    )[-1]  # Find rho
+        v_sorted * torch.arange(1, n + 1, dtype=vector.dtype, device=vector.device)
+        > (cum_vector - radius)
+    )[
+        -1
+    ]  # Find rho
     theta = (cum_vector[rho] - radius) / (rho + 1)  # Compute theta
     w = torch.clamp(vector - theta, min=0)  # Compute projection
     return w
 
 
-def project_l1_box_torch(v, min_l1_norm: float = 1, max_value: float = 1, verbose: bool = False) -> torch.Tensor:
+def project_l1_box_torch(
+    v, min_l1_norm: float = 1, max_value: float = 1, verbose: bool = False
+) -> torch.Tensor:
     w = torch.clamp(v, min=0, max=max_value)
     if v.sum() > torch.tensor(min_l1_norm):
         return w
@@ -2301,7 +2584,9 @@ def project_l1_box_torch(v, min_l1_norm: float = 1, max_value: float = 1, verbos
         n_iter = 0
         w_i = torch.clamp(v, max=max_value)  # clamp maximum values
         while not condition:
-            w_proj = w_i[w_i < max_value]  # consider only entries that are allowed to grow
+            w_proj = w_i[
+                w_i < max_value
+            ]  # consider only entries that are allowed to grow
             l1_reduce = (
                 min_l1_norm - torch.sum(w_i == max_value) * max_value
             )  # adjust l1 norm constrain based on norm of entries that are already in their max values
@@ -2313,7 +2598,9 @@ def project_l1_box_torch(v, min_l1_norm: float = 1, max_value: float = 1, verbos
 
             if torch.sum(w_i) >= torch.tensor(min_l1_norm):
                 return w_i
-            w_i[w_i == 0] = v[w_i == 0]  ## assign original values to items truncated to zero
+            w_i[w_i == 0] = v[
+                w_i == 0
+            ]  ## assign original values to items truncated to zero
 
             n_iter += 1
             condition = n_iter > 10

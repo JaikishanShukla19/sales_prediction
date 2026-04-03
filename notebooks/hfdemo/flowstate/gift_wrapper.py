@@ -12,7 +12,15 @@ from tsfm_public.models.flowstate.utils.utils import get_fixed_factor
 
 class FlowState_Gift_Wrapper:
     def __init__(
-        self, model, prediction_length, batch_size=64, n_ch=1, f="h", device="cpu", domain=None, no_daily=False
+        self,
+        model,
+        prediction_length,
+        batch_size=64,
+        n_ch=1,
+        f="h",
+        device="cpu",
+        domain=None,
+        no_daily=False,
     ):
         self.model = model
         cfg = self.model.config
@@ -30,7 +38,9 @@ class FlowState_Gift_Wrapper:
         self.pretrain_context = cfg["context_length"]
         self.quantiles = cfg["quantiles"]
 
-        self.replace_nan = False  # not necessary, mask as missing values takes care of this
+        self.replace_nan = (
+            False  # not necessary, mask as missing values takes care of this
+        )
         self.dynamic_batch_size = True
         self.n_ch = n_ch
         self.batch_size = batch_size
@@ -72,11 +82,20 @@ class FlowState_Gift_Wrapper:
                 seq = self.fill_nan(seq["target"])
                 inp = torch.from_numpy(seq).view(seq.shape[-1], -1, 1).float()
             else:
-                seq = np.stack([self.fill_nan(seqi) for seqi in seq["target"]])  # ch, len
-                inp = torch.from_numpy(seq).transpose(0, 1).float().view(seq.shape[-1], -1, 1)
+                seq = np.stack(
+                    [self.fill_nan(seqi) for seqi in seq["target"]]
+                )  # ch, len
+                inp = (
+                    torch.from_numpy(seq)
+                    .transpose(0, 1)
+                    .float()
+                    .view(seq.shape[-1], -1, 1)
+                )
             context_len = min(max_context, inp.shape[0])
             inp = inp[-context_len:]
-            inp = torch.from_numpy(self.fill_nan(inp.numpy()))  # could be nan again in the beginning (special case)
+            inp = torch.from_numpy(
+                self.fill_nan(inp.numpy())
+            )  # could be nan again in the beginning (special case)
             datalist.append((inp.shape[0], inp, idx))
         # sort by context
         datalist = sorted(datalist, key=lambda el: el[0])
@@ -101,8 +120,13 @@ class FlowState_Gift_Wrapper:
 
     def forecasts_from_batch(self, pred):
         if pred.shape[0] % self.n_ch != 0:
-            raise Exception("This should not happen. Predictions for different channels should be in the same batch.")
-        pred = [Gift_Forecast(indi_pred, self.quantiles) for indi_pred in torch.split(pred, self.n_ch, dim=0)]
+            raise Exception(
+                "This should not happen. Predictions for different channels should be in the same batch."
+            )
+        pred = [
+            Gift_Forecast(indi_pred, self.quantiles)
+            for indi_pred in torch.split(pred, self.n_ch, dim=0)
+        ]
         return pred
 
     def set_freq(self):
@@ -131,7 +155,9 @@ class FlowState_Gift_Wrapper:
                 prediction_length=self.prediction_length,
                 batch_first=False,
             ).quantile_outputs
-            pred = pred.squeeze(-1).transpose(-1, -2)  # pred has shape: batch, forecast_len, quantiles
+            pred = pred.squeeze(-1).transpose(
+                -1, -2
+            )  # pred has shape: batch, forecast_len, quantiles
             if self.enforce_only_positive:
                 # in some domains values have to be strictly positive (sales, nr of clicks on a website, nr of vehicles passing a sensor etc.).
                 # This option checks whether a time series could be such a case and enforces that predictions are also positive
@@ -141,7 +167,9 @@ class FlowState_Gift_Wrapper:
                 for ix, make_pos in enumerate(strict_positive):
                     if make_pos:
                         pred[ix] = torch.clamp(pred[ix], min=0.0)
-            preds.extend(self.forecasts_from_batch(pred[:, : self.prediction_length].cpu()))
+            preds.extend(
+                self.forecasts_from_batch(pred[:, : self.prediction_length].cpu())
+            )
         # Reorder predictions back to original order
         preds_ = len(preds) * [None]
         for i, i_ in enumerate(indeces):
@@ -153,7 +181,9 @@ class Gift_Forecast(Forecast):
     def __init__(self, seq, quantiles):
         super().__init__()
         self.quantiles = quantiles
-        self.seq = seq.transpose(0, 1).detach().numpy()  # seq_len, n_channels, n_quantiles
+        self.seq = (
+            seq.transpose(0, 1).detach().numpy()
+        )  # seq_len, n_channels, n_quantiles
 
     @property
     def mean(self):
@@ -182,4 +212,6 @@ class Gift_Forecast(Forecast):
             return self.seq[..., 0].squeeze()
         elif q > self.quantiles[0]:
             return self.seq[..., -1].squeeze()
-        raise NotImplementedError("Return closest quantile or weighted average of larger and smaller quantile.")
+        raise NotImplementedError(
+            "Return closest quantile or weighted average of larger and smaller quantile."
+        )

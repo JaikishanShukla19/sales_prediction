@@ -10,7 +10,6 @@ from .inference_payloads import (
 )
 from .service_handler import HandlerFunction, ServiceHandler
 
-
 LOGGER = logging.getLogger(__file__)
 
 
@@ -35,7 +34,9 @@ class TuningHandler(ServiceHandler):
         # this is loading config and returning
         # the appropriate model handler, it's
         # not loading the model yet
-        return super().load(model_id, model_path, handler_function=HandlerFunction.TUNING.value)
+        return super().load(
+            model_id, model_path, handler_function=HandlerFunction.TUNING.value
+        )
 
     def train(
         self,
@@ -47,11 +48,17 @@ class TuningHandler(ServiceHandler):
     ) -> Tuple[str, None] | Tuple[None, Exception]:
         """Perform a fine-tuning request"""
         if not self.prepared:
-            return None, RuntimeError("Service wrapper has not yet been prepared; run `handler.prepare()` first.")
+            return None, RuntimeError(
+                "Service wrapper has not yet been prepared; run `handler.prepare()` first."
+            )
 
         try:
             result = self.implementation.train(
-                data, schema=schema, parameters=parameters, tuned_model_name=tuned_model_name, tmp_dir=tmp_dir
+                data,
+                schema=schema,
+                parameters=parameters,
+                tuned_model_name=tuned_model_name,
+                tmp_dir=tmp_dir,
             )
 
             # Does TuneOuput need some info about the request -- for billing purposes?

@@ -21,10 +21,8 @@ class TuneTypeEnum(str, Enum):
 
 
 class AsyncCallReturn(BaseModel):
-    job_id: str = Field(
-        description="""A unique job identifier that can later be used in
-        calls to jobstatus to obtain information about the asynchronous job."""
-    )
+    job_id: str = Field(description="""A unique job identifier that can later be used in
+        calls to jobstatus to obtain information about the asynchronous job.""")
 
 
 class TrainerArguments(BaseModel):
@@ -72,7 +70,9 @@ class TinyTimeMixerForecastingTuneInput(ForecastingTuneInput):
     # inner class seems to hide "Parameters" from the json/yaml
     # schema which is what we want.
     class Parameters(ForecastingParameters):
-        random_seed: Optional[int] = Field(default=None, description="Random seed set prior to fine tuning.")
+        random_seed: Optional[int] = Field(
+            default=None, description="Random seed set prior to fine tuning."
+        )
         tune_type: TuneTypeEnum = TuneTypeEnum.linear_probe
         tune_prefix: str = Field(
             pattern=".*",
@@ -91,7 +91,9 @@ class TinyTimeMixerForecastingTuneInput(ForecastingTuneInput):
             Uniform means that data is chosen uniformly over the entire fine tuning dataset.""",
         )
         trainer_args: TrainerArguments = Field(default=TrainerArguments())
-        model_parameters: TinyTimeMixerParameters = Field(default=TinyTimeMixerParameters())
+        model_parameters: TinyTimeMixerParameters = Field(
+            default=TinyTimeMixerParameters()
+        )
 
         # @field_validator("fewshot_fraction")
         # @classmethod

@@ -6,8 +6,12 @@
 import pytest
 
 from tsfm_public.models.tspulse import TSPulseConfig, TSPulseForClassification
-from tsfm_public.toolkit.time_series_classification_pipeline import TimeSeriesClassificationPipeline
-from tsfm_public.toolkit.time_series_classification_preprocessor import TimeSeriesClassificationPreprocessor
+from tsfm_public.toolkit.time_series_classification_pipeline import (
+    TimeSeriesClassificationPipeline,
+)
+from tsfm_public.toolkit.time_series_classification_preprocessor import (
+    TimeSeriesClassificationPreprocessor,
+)
 
 
 @pytest.fixture(scope="module")
@@ -51,7 +55,9 @@ def test_time_series_classification_pipeline_defaults(tspulse_model, ts_data_nes
     )
     tsp.train(df)
 
-    pipe = TimeSeriesClassificationPipeline(tspulse_model, feature_extractor=tsp, device="cpu")
+    pipe = TimeSeriesClassificationPipeline(
+        tspulse_model, feature_extractor=tsp, device="cpu"
+    )
 
     out_df = pipe(df)
 
@@ -73,14 +79,18 @@ def test_time_series_classification_pipeline_predictions(tspulse_model, ts_data_
     )
     tsp.train(df)
 
-    pipe = TimeSeriesClassificationPipeline(tspulse_model, feature_extractor=tsp, device="cpu")
+    pipe = TimeSeriesClassificationPipeline(
+        tspulse_model, feature_extractor=tsp, device="cpu"
+    )
 
     out_df = pipe(df)
 
     assert out_df["label_prediction"].isin(out_df["label"]).all()
 
 
-def test_time_series_classification_pipeline_inputs_integrity(tspulse_model, ts_data_nested):
+def test_time_series_classification_pipeline_inputs_integrity(
+    tspulse_model, ts_data_nested
+):
     df = ts_data_nested.copy()
 
     tsp = TimeSeriesClassificationPreprocessor(
@@ -94,7 +104,9 @@ def test_time_series_classification_pipeline_inputs_integrity(tspulse_model, ts_
     )
     tsp.train(df)
 
-    pipe = TimeSeriesClassificationPipeline(tspulse_model, feature_extractor=tsp, device="cpu")
+    pipe = TimeSeriesClassificationPipeline(
+        tspulse_model, feature_extractor=tsp, device="cpu"
+    )
 
     out_df = pipe(df)
 

@@ -23,7 +23,6 @@ from tsfm_public.models.tspulse.utils.helpers import (
     patchwise_stitched_reconstruction,
 )
 
-
 TOLERANCE = 1e-4
 
 
@@ -87,7 +86,8 @@ class TSPulseFunctionalTests(unittest.TestCase):
         )
 
         cls.num_patches = (
-            max(cls.params["context_length"], cls.params["patch_length"]) - cls.params["patch_length"]
+            max(cls.params["context_length"], cls.params["patch_length"])
+            - cls.params["patch_length"]
         ) // cls.params["patch_stride"] + 1
 
         # batch_size = 32
@@ -109,7 +109,10 @@ class TSPulseFunctionalTests(unittest.TestCase):
 
         cls.enc_output = torch.rand(
             batch_size,
-            int(cls.params["num_channels_layerwise_scale"][-1] * cls.params["num_input_channels"]),
+            int(
+                cls.params["num_channels_layerwise_scale"][-1]
+                * cls.params["num_input_channels"]
+            ),
             int(cls.params["num_patches_layerwise_scale"][-1] * cls.num_patches),
             int(cls.params["d_model_layerwise_scale"][-1] * cls.params["d_model"]),
         )
@@ -123,9 +126,17 @@ class TSPulseFunctionalTests(unittest.TestCase):
 
         cls.dec_output = torch.rand(
             batch_size,
-            int(cls.params["decoder_num_channels_layerwise_scale"][-1] * cls.params["num_input_channels"]),
-            int(cls.params["decoder_num_patches_layerwise_scale"][-1] * cls.num_patches),
-            int(cls.params["decoder_d_model_layerwise_scale"][-1] * cls.params["d_model"]),
+            int(
+                cls.params["decoder_num_channels_layerwise_scale"][-1]
+                * cls.params["num_input_channels"]
+            ),
+            int(
+                cls.params["decoder_num_patches_layerwise_scale"][-1] * cls.num_patches
+            ),
+            int(
+                cls.params["decoder_d_model_layerwise_scale"][-1]
+                * cls.params["d_model"]
+            ),
         )
 
         cls.correct_reconstruction_output = torch.rand(
@@ -151,7 +162,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
             cls.params["num_input_channels"],
         )
 
-        cls.correct_classification_classes = torch.randint(0, cls.params["num_targets"], (batch_size,))
+        cls.correct_classification_classes = torch.randint(
+            0, cls.params["num_targets"], (batch_size,)
+        )
 
     def check_module(
         self,
@@ -187,7 +200,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
             dec_output_shape = list(dec_output.shape)
 
         if config.mode == "common_channel" or task in ["classification"]:
-            enc_output_shape[1] = config.num_input_channels  # no compression for these cases
+            enc_output_shape[1] = (
+                config.num_input_channels
+            )  # no compression for these cases
 
         if config.fuse_fft:
             enc_output_shape[2] *= 2
@@ -197,15 +212,24 @@ class TSPulseFunctionalTests(unittest.TestCase):
             enc_output_shape[2] += config.patch_register_tokens
 
             if task == "reconstruction" or (
-                task in ["classification"] and config.classification_mode == "full_embedding"
+                task in ["classification"]
+                and config.classification_mode == "full_embedding"
             ):
                 dec_output_shape[2] += config.patch_register_tokens
 
-            if task in ["classification"] and config.classification_mode == "short_embedding":
+            if (
+                task in ["classification"]
+                and config.classification_mode == "short_embedding"
+            ):
                 dec_output_shape[2] = config.patch_register_tokens
 
-            if task in ["classification"] and config.classification_mode == "time_with_short_fft_embedding":
-                dec_output_shape[2] = (dec_output_shape[2] // 2) + config.patch_register_tokens
+            if (
+                task in ["classification"]
+                and config.classification_mode == "time_with_short_fft_embedding"
+            ):
+                dec_output_shape[2] = (
+                    dec_output_shape[2] // 2
+                ) + config.patch_register_tokens
 
             if task in [
                 "classification",
@@ -222,9 +246,15 @@ class TSPulseFunctionalTests(unittest.TestCase):
         dec_output = torch.rand(tuple(dec_output_shape)).flatten(start_dim=2)
 
         cat_samples = None
-        if "categorical_vocab_size_list" in params and params["categorical_vocab_size_list"]:
+        if (
+            "categorical_vocab_size_list" in params
+            and params["categorical_vocab_size_list"]
+        ):
             b = self.__class__.batch_size
-            cat_samples = [torch.randint(0, a, (b, 1)) for a in params["categorical_vocab_size_list"]]
+            cat_samples = [
+                torch.randint(0, a, (b, 1))
+                for a in params["categorical_vocab_size_list"]
+            ]
             cat_samples = torch.stack(cat_samples, dim=1).squeeze()
 
         if task == "reconstruction":
@@ -240,10 +270,16 @@ class TSPulseFunctionalTests(unittest.TestCase):
 
             if config.fuse_fft:
                 if config.fft_weight > 0:
-                    self.assertEqual(output.fft_reconstruction_outputs.shape, target_output.shape)
-                    self.assertEqual(output.original_past_values_fft.shape, target_output.shape)
+                    self.assertEqual(
+                        output.fft_reconstruction_outputs.shape, target_output.shape
+                    )
+                    self.assertEqual(
+                        output.original_past_values_fft.shape, target_output.shape
+                    )
                 if config.fft_original_signal_loss_weight > 0:
-                    self.assertEqual(output.reconstructed_ts_from_fft.shape, target_output.shape)
+                    self.assertEqual(
+                        output.reconstructed_ts_from_fft.shape, target_output.shape
+                    )
                 if config.fft_mask_ratio is not None and config.fft_mask_ratio > 0:
                     self.assertEqual(output.fft_mask.shape, target_output.shape)
                 if config.enable_fft_prob_loss:
@@ -262,8 +298,12 @@ class TSPulseFunctionalTests(unittest.TestCase):
                     )
 
             if config.fft_time_add_forecasting_pt_loss:
-                self.assertEqual(output.future_values.shape, self.__class__.future_values.shape)
-                self.assertEqual(output.forecast_output.shape, self.__class__.future_values.shape)
+                self.assertEqual(
+                    output.future_values.shape, self.__class__.future_values.shape
+                )
+                self.assertEqual(
+                    output.forecast_output.shape, self.__class__.future_values.shape
+                )
 
             if config.mask_ratio is not None and config.mask_ratio > 0:
                 self.assertEqual(output.masked_past_values.shape, target_output.shape)
@@ -272,7 +312,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
             self.assertEqual(output.fft_loss.item() < np.inf, True)
             self.assertEqual(output.reconstruction_loss.item() < np.inf, True)
             self.assertEqual(output.forecast_loss.item() < np.inf, True)
-            self.assertEqual(output.reconstructed_ts_from_fft_loss.item() < np.inf, True)
+            self.assertEqual(
+                output.reconstructed_ts_from_fft_loss.item() < np.inf, True
+            )
 
             self.assertEqual(output.masked_reconstruction_loss.item() < np.inf, True)
 
@@ -415,7 +457,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
         )
         # print(params)
         self.check_module(task="reconstruction", params=params)
-        self.check_module(task="reconstruction", params=params, output_hidden_states=False)
+        self.check_module(
+            task="reconstruction", params=params, output_hidden_states=False
+        )
 
     @parameterized.expand(
         list(
@@ -687,7 +731,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
         total_elements = B * T * C
         masked_elements = mask.sum().item()
         expected = int(total_elements * params["mask_ratio"])
-        self.assertTrue(abs(masked_elements - expected) / total_elements < 0.1)  # within 10%
+        self.assertTrue(
+            abs(masked_elements - expected) / total_elements < 0.1
+        )  # within 10%
 
         masked_tensor, mask = mdl.backbone.time_masker.hybrid_masking_with_token(
             x,
@@ -735,11 +781,13 @@ class TSPulseFunctionalTests(unittest.TestCase):
         mask_token_values = mdl.backbone.time_masker.mask_token.clone()
 
         # === Base call
-        masked_tensor, mask = mdl.backbone.time_masker.variable_length_hybrid_masking_with_token(
-            tensor=x,
-            mask_percentage=params["mask_ratio"],
-            patch_size=patch_size,
-            full_patch_mask_percentage=params["full_patch_mask_percentage"],
+        masked_tensor, mask = (
+            mdl.backbone.time_masker.variable_length_hybrid_masking_with_token(
+                tensor=x,
+                mask_percentage=params["mask_ratio"],
+                patch_size=patch_size,
+                full_patch_mask_percentage=params["full_patch_mask_percentage"],
+            )
         )
         self.assertEqual(masked_tensor.shape, x.shape)
         self.assertEqual(mask.shape, x.shape)
@@ -866,7 +914,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
                 self.C = C
                 self.data = [
                     {
-                        "past_values": torch.arange(i * T * C, (i + 1) * T * C).view(T, C).float(),
+                        "past_values": torch.arange(i * T * C, (i + 1) * T * C)
+                        .view(T, C)
+                        .float(),
                         "label": i,
                     }
                     for i in range(num_samples)
@@ -913,7 +963,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
                     assert (
                         mask_positions == expected
                     ), f"Incorrect patch order for {window_position}: got {mask_positions}, expected {expected}"
-                    assert pv_count == num_patches, f"Expected {num_patches} reps, got {pv_count}"
+                    assert (
+                        pv_count == num_patches
+                    ), f"Expected {num_patches} reps, got {pv_count}"
                     prev_pv = past_values
                     pv_count = 1
                     mask_positions = []
@@ -924,7 +976,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
                 # Check where mask is False (i.e. masked)
                 mask = past_observed_mask == 0
                 masked_rows = (mask.any(dim=1)).nonzero(as_tuple=True)[0]
-                assert masked_rows.numel() > 0, "Each sample must have some masked patch"
+                assert (
+                    masked_rows.numel() > 0
+                ), "Each sample must have some masked patch"
 
                 start = masked_rows[0].item()
 
@@ -939,7 +993,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
 
                 # Validate expected masked length
                 expected_masked_len = min(patch_length, T - start)
-                actual_masked_len = (mask[start : start + expected_masked_len].any(dim=1)).sum().item()
+                actual_masked_len = (
+                    (mask[start : start + expected_masked_len].any(dim=1)).sum().item()
+                )
                 assert (
                     actual_masked_len == expected_masked_len
                 ), f"Expected {expected_masked_len} rows masked, got {actual_masked_len}"
@@ -949,7 +1005,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
             assert (
                 mask_positions == expected
             ), f"Incorrect patch order for {window_position}: got {mask_positions}, expected {expected}"
-            assert pv_count == num_patches, f"Expected {num_patches} reps at end, got {pv_count}"
+            assert (
+                pv_count == num_patches
+            ), f"Expected {num_patches} reps at end, got {pv_count}"
 
     def test_get_embeddings(self):
         params = self.__class__.params.copy()
@@ -971,13 +1029,39 @@ class TSPulseFunctionalTests(unittest.TestCase):
         # backbone_d_model=decoder_d_model=24, time_num_patches=fft_num_patches=64
         model = TSPulseForReconstruction(TSPulseConfig(**params))
         component = "backbone"
-        assert get_embeddings(model, past_values, component=component, mode="time").shape[2] == 1536  # 64*24
-        assert get_embeddings(model, past_values, component=component, mode="fft").shape[2] == 1536
-        assert get_embeddings(model, past_values, component=component, mode="register").shape[2] == 240  # 10*24
+        assert (
+            get_embeddings(model, past_values, component=component, mode="time").shape[
+                2
+            ]
+            == 1536
+        )  # 64*24
+        assert (
+            get_embeddings(model, past_values, component=component, mode="fft").shape[2]
+            == 1536
+        )
+        assert (
+            get_embeddings(
+                model, past_values, component=component, mode="register"
+            ).shape[2]
+            == 240
+        )  # 10*24
         component = "decoder"
-        assert get_embeddings(model, past_values, component=component, mode="time").shape[2] == 1536
-        assert get_embeddings(model, past_values, component=component, mode="fft").shape[2] == 1536
-        assert get_embeddings(model, past_values, component=component, mode="register").shape[2] == 240
+        assert (
+            get_embeddings(model, past_values, component=component, mode="time").shape[
+                2
+            ]
+            == 1536
+        )
+        assert (
+            get_embeddings(model, past_values, component=component, mode="fft").shape[2]
+            == 1536
+        )
+        assert (
+            get_embeddings(
+                model, past_values, component=component, mode="register"
+            ).shape[2]
+            == 240
+        )
 
         params.update(
             d_model_layerwise_scale=[1, 0.75],  # backbone_d_model_layerwise = [24, 18]
@@ -985,24 +1069,66 @@ class TSPulseFunctionalTests(unittest.TestCase):
         # backbone_d_model=18
         model = TSPulseForReconstruction(TSPulseConfig(**params))
         component = "backbone"
-        assert get_embeddings(model, past_values, component=component, mode="time").shape[2] == 1152  # 64*18
-        assert get_embeddings(model, past_values, component=component, mode="fft").shape[2] == 1152
-        assert get_embeddings(model, past_values, component=component, mode="register").shape[2] == 180  # 10*18
+        assert (
+            get_embeddings(model, past_values, component=component, mode="time").shape[
+                2
+            ]
+            == 1152
+        )  # 64*18
+        assert (
+            get_embeddings(model, past_values, component=component, mode="fft").shape[2]
+            == 1152
+        )
+        assert (
+            get_embeddings(
+                model, past_values, component=component, mode="register"
+            ).shape[2]
+            == 180
+        )  # 10*18
         # decoder_d_model=24, i.e., d_model_layerwise_scale does not affect decoder_d_model
         component = "decoder"
-        assert get_embeddings(model, past_values, component=component, mode="time").shape[2] == 1536
-        assert get_embeddings(model, past_values, component=component, mode="fft").shape[2] == 1536
-        assert get_embeddings(model, past_values, component=component, mode="register").shape[2] == 240
+        assert (
+            get_embeddings(model, past_values, component=component, mode="time").shape[
+                2
+            ]
+            == 1536
+        )
+        assert (
+            get_embeddings(model, past_values, component=component, mode="fft").shape[2]
+            == 1536
+        )
+        assert (
+            get_embeddings(
+                model, past_values, component=component, mode="register"
+            ).shape[2]
+            == 240
+        )
 
         params.update(
-            num_patches_layerwise_scale=[1, 0.75],  # backbone_num_patches_layerwise = [128, 96]
+            num_patches_layerwise_scale=[
+                1,
+                0.75,
+            ],  # backbone_num_patches_layerwise = [128, 96]
         )
         # backbone_d_model=18, time_num_patches=48 (=96/2),
         model = TSPulseForReconstruction(TSPulseConfig(**params))
         component = "backbone"
-        assert get_embeddings(model, past_values, component=component, mode="time").shape[2] == 864  # 48*18
-        assert get_embeddings(model, past_values, component=component, mode="fft").shape[2] == 864
-        assert get_embeddings(model, past_values, component=component, mode="register").shape[2] == 180
+        assert (
+            get_embeddings(model, past_values, component=component, mode="time").shape[
+                2
+            ]
+            == 864
+        )  # 48*18
+        assert (
+            get_embeddings(model, past_values, component=component, mode="fft").shape[2]
+            == 864
+        )
+        assert (
+            get_embeddings(
+                model, past_values, component=component, mode="register"
+            ).shape[2]
+            == 180
+        )
 
         params.update(
             d_model=8,
@@ -1011,4 +1137,9 @@ class TSPulseFunctionalTests(unittest.TestCase):
         )
         model = TSPulseForReconstruction(TSPulseConfig(**params))
         component = "decoder"
-        assert get_embeddings(model, past_values, component=component, mode="register").shape[2] == 64  # 8*8
+        assert (
+            get_embeddings(
+                model, past_values, component=component, mode="register"
+            ).shape[2]
+            == 64
+        )  # 8*8

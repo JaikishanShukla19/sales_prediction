@@ -47,12 +47,19 @@ def create_rolling_forecast_contexts(
     T = int(pv.shape[0])
     H = int(prediction_length)
     if T < context_length:
-        raise ValueError(f"Need at least context_length={context_length} points, got {T}")
+        raise ValueError(
+            f"Need at least context_length={context_length} points, got {T}"
+        )
 
     if max_context is not None:
         if max_context < context_length:
-            raise ValueError(f"max_context ({max_context}) must be >= context_length ({context_length}).")
-    assert mode in ["fixed", "expanding"], f"Invalid mode '{mode}'. Must be 'fixed' or 'expanding'."
+            raise ValueError(
+                f"max_context ({max_context}) must be >= context_length ({context_length})."
+            )
+    assert mode in [
+        "fixed",
+        "expanding",
+    ], f"Invalid mode '{mode}'. Must be 'fixed' or 'expanding'."
 
     end_idx = np.arange(context_length - 1, T, step)
     N = len(end_idx)
@@ -74,7 +81,9 @@ def create_rolling_forecast_contexts(
         if mode == "fixed":
             L = context_length
             if (max_context is not None) and (L > max_context):
-                raise ValueError(f"context_length ({context_length}) exceeds max_context ({max_context}).")
+                raise ValueError(
+                    f"context_length ({context_length}) exceeds max_context ({max_context})."
+                )
             start = t - L
         else:  # expanding
             # grow with t, but clip to max_context if provided
@@ -114,7 +123,9 @@ def create_rolling_forecast_contexts(
     return output
 
 
-def plot_anomaly_detection(data, label, p_values, label_pred, threshold=None, output_dir="output"):
+def plot_anomaly_detection(
+    data, label, p_values, label_pred, threshold=None, output_dir="output"
+):
     """
     Create a figure with two subplots for anomaly detection visualization.
 
@@ -179,7 +190,13 @@ def plot_anomaly_detection(data, label, p_values, label_pred, threshold=None, ou
 
     # Mark threshold with dotted line (if provided)
     if threshold is not None:
-        ax2.axhline(y=threshold, color="orange", linestyle="--", linewidth=2, label=f"Threshold = {threshold:.4f}")
+        ax2.axhline(
+            y=threshold,
+            color="orange",
+            linestyle="--",
+            linewidth=2,
+            label=f"Threshold = {threshold:.4f}",
+        )
 
     # Mark detected outliers (where label_pred == 1)
     ax2.scatter(

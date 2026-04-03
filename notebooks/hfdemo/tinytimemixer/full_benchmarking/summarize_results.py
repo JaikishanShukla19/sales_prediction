@@ -4,7 +4,6 @@ import re
 
 import pandas as pd
 
-
 parser = argparse.ArgumentParser(description="TTM pretrain arguments.")
 # Adding a positional argument
 parser.add_argument(
@@ -57,14 +56,20 @@ final_df = pd.concat(all_data, ignore_index=True)
 custom_order = ["etth1", "etth2", "ettm1", "ettm2", "weather", "electricity", "traffic"]
 
 
-final_df["dataset_sorted"] = pd.Categorical(final_df["dataset"], categories=custom_order, ordered=True)
+final_df["dataset_sorted"] = pd.Categorical(
+    final_df["dataset"], categories=custom_order, ordered=True
+)
 
-final_df = final_df.sort_values(by=["CL", "dataset_sorted", "FL"], ascending=[True, True, True])
+final_df = final_df.sort_values(
+    by=["CL", "dataset_sorted", "FL"], ascending=[True, True, True]
+)
 
 
 # Save to a new CSV file or process further
 out_file_name = os.path.basename(os.path.normpath(main_folder_path))
-final_df[["dataset", "CL", "FL", "zs_mse", "fs5_mse"]].to_csv(f"combined_{out_file_name}.csv", index=False)
+final_df[["dataset", "CL", "FL", "zs_mse", "fs5_mse"]].to_csv(
+    f"combined_{out_file_name}.csv", index=False
+)
 
 final_df = final_df.drop(columns=["Unnamed: 0", "dataset_sorted", "FL"])
 cols = final_df.columns

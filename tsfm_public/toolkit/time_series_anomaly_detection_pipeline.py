@@ -19,7 +19,9 @@ from transformers.trainer_utils import RemoveColumnsCollator
 from transformers.utils.doc import add_end_docstrings
 from transformers.utils.generic import ModelOutput
 
-from tsfm_public.models.tinytimemixer.modeling_tinytimemixer import TinyTimeMixerForPrediction
+from tsfm_public.models.tinytimemixer.modeling_tinytimemixer import (
+    TinyTimeMixerForPrediction,
+)
 from tsfm_public.models.tinytimemixer.utils.ad_helpers import TinyTimeMixerADUtility
 from tsfm_public.models.tspulse.modeling_tspulse import TSPulseForReconstruction
 from tsfm_public.models.tspulse.utils.ad_helpers import TSPulseADUtility
@@ -52,13 +54,22 @@ def score_smoothing(
     if smoothing_window_size < 2:
         return x
     elif x.ndim == 1:
-        return np.convolve(x, np.ones(smoothing_window_size) / smoothing_window_size, mode="same")
+        return np.convolve(
+            x, np.ones(smoothing_window_size) / smoothing_window_size, mode="same"
+        )
     else:
-        return np.array([score_smoothing(x[..., i], smoothing_window_size) for i in range(x.shape[-1])]).T
+        return np.array(
+            [
+                score_smoothing(x[..., i], smoothing_window_size)
+                for i in range(x.shape[-1])
+            ]
+        ).T
 
 
 @add_end_docstrings(
-    build_pipeline_init_args(has_tokenizer=False, has_feature_extractor=True, has_image_processor=False)
+    build_pipeline_init_args(
+        has_tokenizer=False, has_feature_extractor=True, has_image_processor=False
+    )
 )
 class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
     """Time Series Anomaly Detection using HF time series models. This pipeline consumes a `pandas.DataFrame`
@@ -105,11 +116,17 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
         model_processor = None
         if isinstance(model, TSPulseForReconstruction):
             model_processor = TSPulseADUtility(
-                model, mode=prediction_mode, aggregation_length=aggregation_length, **kwargs
+                model,
+                mode=prediction_mode,
+                aggregation_length=aggregation_length,
+                **kwargs,
             )
         elif isinstance(model, TinyTimeMixerForPrediction):
             model_processor = TinyTimeMixerADUtility(
-                model=model, mode=prediction_mode, probabilistic_processor=probabilistic_processor, **kwargs
+                model=model,
+                mode=prediction_mode,
+                probabilistic_processor=probabilistic_processor,
+                **kwargs,
             )
         else:
             raise ValueError(f"Error: does not support {self.model.__class__} object!")
@@ -134,7 +151,9 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
         if use_frequency_token and "feature_extractor" in kwargs:
             freq = getattr(kwargs["feature_extractor"], "freq", None)
             kwargs["frequency_token"] = (
-                kwargs["feature_extractor"].get_frequency_token(freq) if freq is not None else None
+                kwargs["feature_extractor"].get_frequency_token(freq)
+                if freq is not None
+                else None
             )
         else:
             kwargs["frequency_token"] = None
@@ -217,7 +236,9 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
                 postprocess_kwargs[c] = kwargs[c]
 
         if self.model_type == "tspulse":
-            preprocess_kwargs["prediction_length"] = 1  # should not override model setting when TTM
+            preprocess_kwargs["prediction_length"] = (
+                1  # should not override model setting when TTM
+            )
 
         # same logic as HF Pipeline
         batch_size = kwargs.get("batch_size", self._batch_size)
@@ -245,7 +266,9 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
 
         return preprocess_kwargs, forward_kwargs, postprocess_kwargs
 
-    def preprocess(self, input_, **kwargs) -> Dict[str, Union[GenericTensor, List[Any]]]:
+    def preprocess(
+        self, input_, **kwargs
+    ) -> Dict[str, Union[GenericTensor, List[Any]]]:
         """Preprocess step
         Load the data, if not already loaded, and then generate a pytorch dataset.
         """
@@ -284,7 +307,9 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
         self.__context_memory["reference"] = processed_input_
         return {"dataset": dataset}
 
-    def run_single(self, inputs, preprocess_params, forward_params, postprocess_params) -> pd.DataFrame:
+    def run_single(
+        self, inputs, preprocess_params, forward_params, postprocess_params
+    ) -> pd.DataFrame:
         """Replaces base `run_single` method which does batching during inference. This is needed to support
         large inference requests.
 
@@ -311,7 +336,11 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
         batch_size = forward_params.get("batch_size")
         num_workers = forward_params.get("num_workers")
         dataloader = DataLoader(
-            dataset, batch_size=batch_size, num_workers=num_workers, collate_fn=remove_columns_collator, shuffle=False
+            dataset,
+            batch_size=batch_size,
+            num_workers=num_workers,
+            collate_fn=remove_columns_collator,
+            shuffle=False,
         )
 
         it = iter(dataloader)
@@ -358,7 +387,9 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
         target_columns = postprocess_parameters.get("target_columns")
 
         report_mode = postprocess_parameters.get("report_mode", False)
-        predictive_score_smoothing = postprocess_parameters.get("predictive_score_smoothing", False)
+        predictive_score_smoothing = postprocess_parameters.get(
+            "predictive_score_smoothing", False
+        )
         if not isinstance(smoothing_window_size, int):
             try:
                 smoothing_window_size = int(smoothing_window_size)
@@ -386,7 +417,9 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
                     score, smoothing_window_size=1
                 )  # no smoothing of p-value scores across time
             else:
-                model_outputs_[k] = score_smoothing(score, smoothing_window_size=smoothing_window_size)
+                model_outputs_[k] = score_smoothing(
+                    score, smoothing_window_size=smoothing_window_size
+                )
 
         # aggregate scores and expand
         score = np.stack([score_ for _, score_ in model_outputs_.items()], axis=0)
@@ -394,7 +427,9 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
         if report_mode and (self.select_function is not None):
             keys = [key for key, _ in model_outputs_.items()]
             sel_index = self.select_function(score, axis=0)
-            mode_selected = np.asarray([keys[z] for z in sel_index.ravel()]).reshape(sel_index.shape)
+            mode_selected = np.asarray([keys[z] for z in sel_index.ravel()]).reshape(
+                sel_index.shape
+            )
 
         score = self.aggr_function(score, axis=0)
 
@@ -402,7 +437,9 @@ class TimeSeriesAnomalyDetectionPipeline(TimeSeriesPipeline):
         model_outputs = {}
         if expand_score:
             if len(target_columns) != score.shape[-1]:
-                raise RuntimeError(f"Error: inconsistent state, with target columns {target_columns}")
+                raise RuntimeError(
+                    f"Error: inconsistent state, with target columns {target_columns}"
+                )
             for i, col_name in enumerate(target_columns):
                 model_outputs[f"{col_name}_anomaly_score"] = score[..., i]
 

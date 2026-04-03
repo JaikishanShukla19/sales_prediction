@@ -12,7 +12,6 @@ from tsfm_public.toolkit.time_series_preprocessor import (
     TimeSeriesPreprocessor,
 )
 
-
 GRANITE_TSFM_CHECKPOINTS = {
     "ttm": "ibm-granite/granite-timeseries-ttm-r2",
     "flowstate": "ibm-granite/granite-timeseries-flowstate-r1",
@@ -54,8 +53,15 @@ def granite_tsfm_forecaster(
     fpipe = TimeSeriesForecastingPipeline(model, feature_extractor=tsp, device=device)
     forecast = fpipe(df)
     y_pred = np.array(
-        [np.stack(z) for z in forecast[[f"{target_column}_prediction" for target_column in target_columns]].values]
+        [
+            np.stack(z)
+            for z in forecast[
+                [f"{target_column}_prediction" for target_column in target_columns]
+            ].values
+        ]
     ).transpose(0, 2, 1)
-    y_true = np.array([np.stack(z) for z in forecast[list(target_columns)].values]).transpose(0, 2, 1)
+    y_true = np.array(
+        [np.stack(z) for z in forecast[list(target_columns)].values]
+    ).transpose(0, 2, 1)
 
     return {"y_pred": y_pred, "y_true": y_true[:, : y_pred.shape[1], :]}

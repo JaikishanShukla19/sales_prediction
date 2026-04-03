@@ -93,7 +93,9 @@ class TSPulseADUtility(TSADHelperUtility):
         x_ = x.copy()
         target_columns = kwargs.get("target_columns", [])
         if len(target_columns) > 0:
-            x_[target_columns] = StandardScaler_().fit_transform(x[target_columns].values)
+            x_[target_columns] = StandardScaler_().fit_transform(
+                x[target_columns].values
+            )
         return x_
 
     def compute_score(
@@ -158,7 +160,9 @@ class TSPulseADUtility(TSADHelperUtility):
                 batch_x[:, reconstruct_start:reconstruct_end, :],
                 output[:, reconstruct_start:reconstruct_end, :],
             )
-            scores[AnomalyScoreMethods.TIME_RECONSTRUCTION.value] = torch.mean(pointwise_score, dim=reduction_axis)
+            scores[AnomalyScoreMethods.TIME_RECONSTRUCTION.value] = torch.mean(
+                pointwise_score, dim=reduction_axis
+            )
 
         if use_fft:
             # time reconstruction from fft
@@ -175,8 +179,12 @@ class TSPulseADUtility(TSADHelperUtility):
             # forecast output
             batch_future_values = payload["future_values"]
             output = model_forward_output["forecast_output"]
-            pointwise_score = anomaly_criterion(batch_future_values[:, 0, :], output[:, 0, :]).unsqueeze(1)
-            scores[AnomalyScoreMethods.PREDICTIVE.value] = torch.mean(pointwise_score, dim=reduction_axis)
+            pointwise_score = anomaly_criterion(
+                batch_future_values[:, 0, :], output[:, 0, :]
+            ).unsqueeze(1)
+            scores[AnomalyScoreMethods.PREDICTIVE.value] = torch.mean(
+                pointwise_score, dim=reduction_axis
+            )
 
         return ModelOutput(scores)
 
@@ -220,7 +228,8 @@ class TSPulseADUtility(TSADHelperUtility):
         if reference is not None:
             reference_data = np.asarray(reference)
             min_score = (
-                self._least_significant_scale * np.nanstd(np.diff(reference_data, axis=0), axis=0, keepdims=True) ** 2
+                self._least_significant_scale
+                * np.nanstd(np.diff(reference_data, axis=0), axis=0, keepdims=True) ** 2
             )
 
             if min_score.shape[-1] != score.shape[-1]:

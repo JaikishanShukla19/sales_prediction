@@ -15,7 +15,6 @@ import requests
 from tsfm_public.toolkit.time_series_preprocessor import extend_time_series
 from tsfm_public.toolkit.util import encode_data, select_by_index
 
-
 logger = logging.getLogger(__name__)
 DUMPPAYLOADS = int(os.getenv("TSFM_TESTS_DUMP_PAYLOADS", "0")) == 1
 
@@ -36,7 +35,9 @@ model_param_map = {
 
 @pytest.fixture(scope="module")
 def ts_data_base():
-    dataset_path = "https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh1.csv"
+    dataset_path = (
+        "https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh1.csv"
+    )
 
     # forecast_length = 96
     # context_length = 512
@@ -56,7 +57,9 @@ def ts_data(ts_data_base, request):
     # context_length = 512
     model_id = request.param
     # make sure models can return less than max prediction length
-    prediction_length = random.randint(1, model_param_map[model_id]["prediction_length"])
+    prediction_length = random.randint(
+        1, model_param_map[model_id]["prediction_length"]
+    )
     context_length = model_param_map[model_id]["context_length"]
     timestamp_column = "date"
 
@@ -79,7 +82,9 @@ def ts_data(ts_data_base, request):
 
 
 def get_inference_response(
-    msg: Dict[str, Any], dumpfile: Optional[Union[str, None]] = None, suppresslog: bool = True
+    msg: Dict[str, Any],
+    dumpfile: Optional[Union[str, None]] = None,
+    suppresslog: bool = True,
 ) -> pd.DataFrame:
     URL = (
         "http://127.0.0.1:8000/v1/inference/forecasting"
@@ -142,7 +147,9 @@ def test_forecast_inference_no_config(ts_data):
     assert len(df_out) == 1
     assert df_out[0].shape[0] == params["prediction_length"]
     assert counts["input_data_points"] == context_length * len(params["target_columns"])
-    assert counts["output_data_points"] == params["prediction_length"] * len(params["target_columns"])
+    assert counts["output_data_points"] == params["prediction_length"] * len(
+        params["target_columns"]
+    )
 
 
 @pytest.mark.parametrize(
@@ -183,7 +190,9 @@ def test_zero_shot_forecast_inference(ts_data):
     assert len(df_out) == 1
     assert df_out[0].shape[0] == prediction_length
     assert counts["input_data_points"] == context_length * len(params["target_columns"])
-    assert counts["output_data_points"] == prediction_length * len(params["target_columns"])
+    assert counts["output_data_points"] == prediction_length * len(
+        params["target_columns"]
+    )
 
     # test single, very short (length 2)
     test_data_ = test_data[test_data[id_columns[0]] == "a"].copy()
@@ -204,14 +213,19 @@ def test_zero_shot_forecast_inference(ts_data):
 
     _, out = get_inference_response(msg)
     assert ("Received 2 time points for id a" in out.text) or (
-        "prediction_filter_length should be positive and less than prediction_length" in out.text
+        "prediction_filter_length should be positive and less than prediction_length"
+        in out.text
     )
 
     # test single, more data
     test_data_ = test_data[test_data[id_columns[0]] == "a"].copy()
 
     test_data_ = extend_time_series(
-        test_data_, params["timestamp_column"], grouping_columns=id_columns, freq="1h", periods=10
+        test_data_,
+        params["timestamp_column"],
+        grouping_columns=id_columns,
+        freq="1h",
+        periods=10,
     )
     test_data_ = test_data_.fillna(0)
 
@@ -233,7 +247,9 @@ def test_zero_shot_forecast_inference(ts_data):
     assert len(df_out) == 1
     assert df_out[0].shape[0] == prediction_length
     assert counts["input_data_points"] == context_length * len(params["target_columns"])
-    assert counts["output_data_points"] == prediction_length * len(params["target_columns"])
+    assert counts["output_data_points"] == prediction_length * len(
+        params["target_columns"]
+    )
 
     # test multi-time series
     test_data_ = test_data.copy()
@@ -256,8 +272,14 @@ def test_zero_shot_forecast_inference(ts_data):
 
     assert len(df_out) == 1
     assert df_out[0].shape[0] == prediction_length * num_ids
-    assert counts["input_data_points"] == context_length * len(params["target_columns"]) * num_ids
-    assert counts["output_data_points"] == prediction_length * len(params["target_columns"]) * num_ids
+    assert (
+        counts["input_data_points"]
+        == context_length * len(params["target_columns"]) * num_ids
+    )
+    assert (
+        counts["output_data_points"]
+        == prediction_length * len(params["target_columns"]) * num_ids
+    )
 
     # test multi-time series, errors
     test_data_ = test_data.iloc[3:].copy()
@@ -323,8 +345,12 @@ def test_zero_shot_forecast_inference(ts_data):
     assert len(df_out) == 1
     assert df_out[0].shape[0] == prediction_length
     assert df_out[0].shape[1] == 6
-    assert counts["input_data_points"] == context_length * len(params["target_columns"][:4])
-    assert counts["output_data_points"] == prediction_length * len(params["target_columns"][:4])
+    assert counts["input_data_points"] == context_length * len(
+        params["target_columns"][:4]
+    )
+    assert counts["output_data_points"] == prediction_length * len(
+        params["target_columns"][:4]
+    )
 
     # single series, less columns, no id
     test_data_ = test_data[test_data[id_columns[0]] == "a"].copy()
@@ -371,7 +397,9 @@ def test_zero_shot_forecast_inference(ts_data):
     assert len(df_out) == 1
     assert df_out[0].shape[0] == prediction_length
     assert counts["input_data_points"] == context_length * len(params["target_columns"])
-    assert counts["output_data_points"] == prediction_length * len(params["target_columns"])
+    assert counts["output_data_points"] == prediction_length * len(
+        params["target_columns"]
+    )
 
     # single series
     # error wrong prediction length
@@ -415,8 +443,12 @@ def test_zero_shot_forecast_inference(ts_data):
     df_out, counts = get_inference_response(msg)
     assert len(df_out) == 1
     assert df_out[0].shape[0] == prediction_length
-    assert counts["input_data_points"] == context_length * len(params["target_columns"][1:])
-    assert counts["output_data_points"] == prediction_length * len(params["target_columns"][1:])
+    assert counts["input_data_points"] == context_length * len(
+        params["target_columns"][1:]
+    )
+    assert counts["output_data_points"] == prediction_length * len(
+        params["target_columns"][1:]
+    )
 
 
 @pytest.mark.parametrize("ts_data", ["ttm-r2-etth-finetuned-control"], indirect=True)
@@ -467,12 +499,17 @@ def test_future_data_forecast_inference(ts_data):
     }
     _, out = get_inference_response(
         msg,
-        dumpfile=os.path.join(tempfile.gettempdir(), "test_future_data_forecast_inference.json")
-        if DUMPPAYLOADS
-        else None,
+        dumpfile=(
+            os.path.join(
+                tempfile.gettempdir(), "test_future_data_forecast_inference.json"
+            )
+            if DUMPPAYLOADS
+            else None
+        ),
     )
     assert (
-        "Future data should have time series of length that is at least the specified prediction length." in out.text
+        "Future data should have time series of length that is at least the specified prediction length."
+        in out.text
     )
 
     # test single series, longer future data
@@ -502,7 +539,9 @@ def test_future_data_forecast_inference(ts_data):
             "timestamp_column": params["timestamp_column"],
             "id_columns": params["id_columns"],
             "target_columns": target_columns,
-            "control_columns": [c for c in params["target_columns"] if c not in target_columns],
+            "control_columns": [
+                c for c in params["target_columns"] if c not in target_columns
+            ],
             "freq": "1h",
         },
         "data": encode_data(test_data_, params["timestamp_column"]),
@@ -562,7 +601,9 @@ def test_forecast_inference_with_impute(ts_data):
             "timestamp_column": params["timestamp_column"],
             "id_columns": params["id_columns"],
             "target_columns": target_columns,
-            "control_columns": [c for c in params["target_columns"] if c not in target_columns],
+            "control_columns": [
+                c for c in params["target_columns"] if c not in target_columns
+            ],
             "freq": "1h",
         },
         "data": encode_data(test_data_, params["timestamp_column"]),
@@ -576,7 +617,9 @@ def test_forecast_inference_with_impute(ts_data):
 
 
 @pytest.mark.parametrize(
-    "ts_data", ["ttm-r1", "ttm-1024-96-r1", "ttm-r2", "ttm-1024-96-r2", "ttm-1536-96-r2"], indirect=True
+    "ts_data",
+    ["ttm-r1", "ttm-1024-96-r1", "ttm-r2", "ttm-1024-96-r2", "ttm-1536-96-r2"],
+    indirect=True,
 )
 def test_zero_shot_forecast_inference_no_timestamp(ts_data):
     test_data, params = ts_data
@@ -613,7 +656,9 @@ def test_zero_shot_forecast_inference_no_timestamp(ts_data):
 
 
 @pytest.mark.parametrize(
-    "ts_data", ["ttm-r1", "ttm-1024-96-r1", "ttm-r2", "ttm-1024-96-r2", "ttm-1536-96-r2"], indirect=True
+    "ts_data",
+    ["ttm-r1", "ttm-1024-96-r1", "ttm-r2", "ttm-1024-96-r2", "ttm-1536-96-r2"],
+    indirect=True,
 )
 def test_forecast_inference_float_timestamp(ts_data):
     test_data, params = ts_data
@@ -651,7 +696,9 @@ def test_forecast_inference_float_timestamp(ts_data):
 
 
 @pytest.mark.parametrize(
-    "ts_data", ["ttm-r1", "ttm-1024-96-r1", "ttm-r2", "ttm-1024-96-r2", "ttm-1536-96-r2"], indirect=True
+    "ts_data",
+    ["ttm-r1", "ttm-1024-96-r1", "ttm-r2", "ttm-1024-96-r2", "ttm-1536-96-r2"],
+    indirect=True,
 )
 def test_forecast_inference_decimal_freq(ts_data):
     test_data, params = ts_data
@@ -777,7 +824,10 @@ def test_finetuned_model_inference(ts_data):
     }
 
     _, out = get_inference_response(msg)
-    assert "Attempted to use a fine-tuned model with data that does not match the saved schema" in out.text
+    assert (
+        "Attempted to use a fine-tuned model with data that does not match the saved schema"
+        in out.text
+    )
 
 
 @pytest.mark.parametrize(
@@ -847,7 +897,10 @@ def test_improper_use_of_zero_shot_model_inference(ts_data):
     }
 
     _, out = get_inference_response(msg)
-    assert "Future data was provided, but the model does not support or require future exogenous." in out.text
+    assert (
+        "Future data was provided, but the model does not support or require future exogenous."
+        in out.text
+    )
 
 
 @pytest.mark.parametrize(

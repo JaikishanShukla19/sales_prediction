@@ -10,7 +10,6 @@ from tsfm_public.toolkit.time_series_classification_preprocessor import (
 )
 from tsfm_public.toolkit.util import convert_tsfile_to_dataframe
 
-
 np.random.seed(0)
 
 
@@ -233,4 +232,9 @@ print(
     mixed_dset_classes.shape,
     mixed_dset_names.shape,
 )
-np.savez("ucr_for_search.npz", ts=mixed_ts, names=mixed_dset_names, classes=mixed_dset_classes)
+np.savez(
+    "ucr_for_search.npz",
+    ts=mixed_ts,
+    names=mixed_dset_names,
+    classes=mixed_dset_classes,
+)

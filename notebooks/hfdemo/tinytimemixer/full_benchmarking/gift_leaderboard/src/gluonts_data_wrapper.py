@@ -14,7 +14,6 @@ from tqdm import tqdm
 from tsfm_public.toolkit.dataset import _torch
 from tsfm_public.toolkit.time_series_preprocessor import DEFAULT_FREQUENCY_MAPPING
 
-
 # TTM Constants:
 TTM_MAX_FORECAST_HORIZON = 720
 TTM_MIN_FORECAST_HORIZON = 16
@@ -101,7 +100,9 @@ def impute_series(target):
         elif len(target.shape) == 1:
             target = LastValueImputation()(target)
         else:
-            raise Exception("Only 1D and 2D arrays are accepted by the impute_series() function.")
+            raise Exception(
+                "Only 1D and 2D arrays are accepted by the impute_series() function."
+            )
     return target
 
 
@@ -128,8 +129,12 @@ class StandardScalingGluonTSDataset:
         """
         for batch in tqdm(batcher(train_data, batch_size=1)):
             if batch[0]["target"].ndim == 1:
-                batch[0]["target"] = batch[0]["target"].reshape(1, -1)  # [1, context_length]
-            self.mean[batch[0]["item_id"]] = np.mean(impute_series(batch[0]["target"]), axis=1).reshape(-1, 1)
+                batch[0]["target"] = batch[0]["target"].reshape(
+                    1, -1
+                )  # [1, context_length]
+            self.mean[batch[0]["item_id"]] = np.mean(
+                impute_series(batch[0]["target"]), axis=1
+            ).reshape(-1, 1)
             std = np.std(impute_series(batch[0]["target"]), axis=1).reshape(-1, 1)
             for i in range(std.shape[0]):
                 if std[i] == 0:
@@ -152,7 +157,9 @@ class StandardScalingGluonTSDataset:
         out = list(data)
         for i, _ in tqdm(enumerate(out)):
             item_id = out[i]["item_id"]
-            out[i]["target"] = (impute_series(out[i]["target"]) - self.mean[item_id]) / (self.std[item_id])
+            out[i]["target"] = (
+                impute_series(out[i]["target"]) - self.mean[item_id]
+            ) / (self.std[item_id])
         return iter(out)
 
     def inverse_transform(
@@ -176,11 +183,15 @@ class StandardScalingGluonTSDataset:
         for i in tqdm(range((data.shape[0]))):
             if len(prediction_channel_indices) > 0:
                 out[i, ...] = (
-                    data[i, ...] * (self.std[series_ids[i]][prediction_channel_indices].T)
+                    data[i, ...]
+                    * (self.std[series_ids[i]][prediction_channel_indices].T)
                     + self.mean[series_ids[i]][prediction_channel_indices].T
                 )
             else:
-                out[i, ...] = data[i, ...] * (self.std[series_ids[i]].T) + self.mean[series_ids[i]].T
+                out[i, ...] = (
+                    data[i, ...] * (self.std[series_ids[i]].T)
+                    + self.mean[series_ids[i]].T
+                )
             if np.isnan(out[i, ...]).any():
                 raise Exception("NaN found in forecast!")
         return out
@@ -259,20 +270,25 @@ class TorchDatasetFromGluonTSTrainingDataset(Dataset):
                     elif fewshot_location == "start":
                         self.X[i]["target"] = self.X[i]["target"][:, :fewshot_len_]
 
-            if self.X[i]["target"].shape[1] < self.context_length + self.prediction_length:
+            if (
+                self.X[i]["target"].shape[1]
+                < self.context_length + self.prediction_length
+            ):
                 # This means only 1 sample can be created from this series
                 # even after zero-padding. We try to create more when
                 # `gen_more_samples_for_short_series=True`
                 if (
                     gen_more_samples_for_short_series
-                    and self.X[i]["target"].shape[1] >= (min_context_needed_mult + 1) * self.prediction_length
+                    and self.X[i]["target"].shape[1]
+                    >= (min_context_needed_mult + 1) * self.prediction_length
                 ):
                     # make sure at least a context of min_context_needed_mult*H is possible
                     # pad more zeros to create more training samples
                     pad = np.zeros(
                         (
                             self.X[i]["target"].shape[0],
-                            self.context_length - min_context_needed_mult * self.prediction_length,
+                            self.context_length
+                            - min_context_needed_mult * self.prediction_length,
                         )
                     )
                 else:
@@ -280,7 +296,9 @@ class TorchDatasetFromGluonTSTrainingDataset(Dataset):
                     pad = np.zeros(
                         (
                             self.X[i]["target"].shape[0],
-                            self.context_length + self.prediction_length - self.X[i]["target"].shape[1],
+                            self.context_length
+                            + self.prediction_length
+                            - self.X[i]["target"].shape[1],
                         )
                     )
 
@@ -315,23 +333,36 @@ class TorchDatasetFromGluonTSTrainingDataset(Dataset):
 
     def __getitem__(self, idx):
         if self.last_window_only:
-            seq_x = self.X[idx]["target"][:, -(self.context_length + self.prediction_length) : -self.prediction_length]
+            seq_x = self.X[idx]["target"][
+                :,
+                -(
+                    self.context_length + self.prediction_length
+                ) : -self.prediction_length,
+            ]
             seq_y = self.X[idx]["target"][:, -(self.prediction_length) :]
             item_id = self.series_ids[idx]
         else:
             idx = idx * self.stride
             if idx < 0:
                 if -idx > len(self):
-                    raise ValueError("absolute value of index should not exceed dataset length")
+                    raise ValueError(
+                        "absolute value of index should not exceed dataset length"
+                    )
                 idx = len(self) + idx
             series_idx = bisect.bisect_right(self.cumulative_sizes, idx)
             if series_idx == 0:
                 time_id = idx
             else:
                 time_id = idx - self.cumulative_sizes[series_idx - 1]
-            seq_x = self.X[series_idx]["target"][:, time_id : time_id + self.context_length]
+            seq_x = self.X[series_idx]["target"][
+                :, time_id : time_id + self.context_length
+            ]
             seq_y = self.X[series_idx]["target"][
-                :, time_id + self.context_length : time_id + self.context_length + self.prediction_length
+                :,
+                time_id
+                + self.context_length : time_id
+                + self.context_length
+                + self.prediction_length,
             ]
             item_id = self.series_ids[series_idx]
 
@@ -417,7 +448,9 @@ class TorchDatasetFromGluonTSTestDataset(Dataset):
             pad = np.zeros((seq_x.shape[0], self.context_length - seq_x.shape[1]))
             seq_x = np.concatenate((pad, seq_x), axis=1)
 
-        seq_x, seq_y = _torch(seq_x[:, -self.context_length :], seq_y[:, : self.prediction_length])
+        seq_x, seq_y = _torch(
+            seq_x[:, -self.context_length :], seq_y[:, : self.prediction_length]
+        )
 
         if self.force_short_context and seq_x.shape[1] < self.actual_seq_len:
             pad = np.zeros((seq_x.shape[0], self.actual_seq_len - seq_x.shape[1]))
@@ -446,7 +479,9 @@ class TorchDatasetFromGluonTSTestDataset(Dataset):
 
 
 class ForecastDataset(Dataset):
-    def __init__(self, forecast_samples, series_ids, insample_errors, point_forecasts, quantiles):
+    def __init__(
+        self, forecast_samples, series_ids, insample_errors, point_forecasts, quantiles
+    ):
         self.forecast_samples = forecast_samples
         self.series_ids = series_ids
         self.insample_errors = insample_errors

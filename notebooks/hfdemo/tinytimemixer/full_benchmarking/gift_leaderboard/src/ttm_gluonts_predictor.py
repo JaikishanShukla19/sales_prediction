@@ -27,7 +27,10 @@ from tsfm_public import (
     TrackingCallback,
     count_parameters,
 )
-from tsfm_public.toolkit.get_model import TTM_LOW_RESOLUTION_MODELS_MAX_CONTEXT, get_model
+from tsfm_public.toolkit.get_model import (
+    TTM_LOW_RESOLUTION_MODELS_MAX_CONTEXT,
+    get_model,
+)
 from tsfm_public.toolkit.lr_finder import optimal_lr_finder
 
 from .gluonts_data_wrapper import (
@@ -40,7 +43,6 @@ from .gluonts_data_wrapper import (
     impute_series,
 )
 from .utils import CustomMASETrainer, plot_forecast
-
 
 logger = logging.get_logger(__name__)
 
@@ -141,7 +143,9 @@ class TTMGluonTSPredictor:
         self.insample_errors = None
 
         if force_short_context:
-            logger.info(f"Forcing short context: H = {prediction_length}, CL={prediction_length * min_context_mult}")
+            logger.info(
+                f"Forcing short context: H = {prediction_length}, CL={prediction_length * min_context_mult}"
+            )
 
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -157,9 +161,18 @@ class TTMGluonTSPredictor:
             self.prediction_channel_indices = kwargs["prediction_channel_indices"]
 
         # Get model
-        self._get_gift_model(model_path, context_length, prediction_length, freq, **kwargs)
+        self._get_gift_model(
+            model_path, context_length, prediction_length, freq, **kwargs
+        )
 
-    def _get_gift_model(self, model_path: str, context_length: int, prediction_length: int, freq: str, **kwargs):
+    def _get_gift_model(
+        self,
+        model_path: str,
+        context_length: int,
+        prediction_length: int,
+        freq: str,
+        **kwargs,
+    ):
         """Get suitable TTM model based on context and forecast lengths.
 
         Args:
@@ -217,7 +230,9 @@ class TTMGluonTSPredictor:
             self.enable_prefix_tuning = self.ttm.config.resolution_prefix_tuning
         logger.info(f"The TTM has Prefix Tuning = {self.enable_prefix_tuning}")
 
-    def _process_time_series(self, dataset: TrainingDataset, truncate: bool = True) -> List:
+    def _process_time_series(
+        self, dataset: TrainingDataset, truncate: bool = True
+    ) -> List:
         """
         Processes a time series by truncating initial NaNs and forward filling intermittent NaNs.
         Returns a new truncated dataset, and does not modify the original one.
@@ -238,7 +253,9 @@ class TTMGluonTSPredictor:
 
             if self.past_feat_dynamic_real_exist:
                 if item["past_feat_dynamic_real"].ndim == 1:
-                    item["past_feat_dynamic_real"] = item["past_feat_dynamic_real"].reshape(1, -1)
+                    item["past_feat_dynamic_real"] = item[
+                        "past_feat_dynamic_real"
+                    ].reshape(1, -1)
                 data = np.vstack((data, item["past_feat_dynamic_real"]))
 
             truncated_dataset[i]["target"] = data
@@ -252,7 +269,9 @@ class TTMGluonTSPredictor:
             if valid_mask.all():
                 continue  # Continue if no NaN
 
-            first_valid = np.argmax(valid_mask.any(axis=0))  # First col with any valid value across channels
+            first_valid = np.argmax(
+                valid_mask.any(axis=0)
+            )  # First col with any valid value across channels
             data = data[:, first_valid:]  # Truncate cols before the first valid col
 
             # Step 2: Perform forward fill for NaNs
@@ -279,17 +298,25 @@ class TTMGluonTSPredictor:
             batch_size, seq_len, no_channels = forecast_samples.shape
             num_quantiles = len(quantiles)
 
-            scales = np.expand_dims(insample_errors, axis=1)  # Shape: (batch_size, 1, H, C)
-            scales = np.tile(scales, (1, num_quantiles, 1, 1))  # Shape: (batch_size, num_quantiles, H, C)
+            scales = np.expand_dims(
+                insample_errors, axis=1
+            )  # Shape: (batch_size, 1, H, C)
+            scales = np.tile(
+                scales, (1, num_quantiles, 1, 1)
+            )  # Shape: (batch_size, num_quantiles, H, C)
 
             # Expand quantiles
-            quantiles_expanded = np.reshape(quantiles, (1, num_quantiles, 1, 1))  # Shape: (1, num_quantiles, 1, 1)
+            quantiles_expanded = np.reshape(
+                quantiles, (1, num_quantiles, 1, 1)
+            )  # Shape: (1, num_quantiles, 1, 1)
             quantiles_expanded = np.tile(
                 quantiles_expanded, (batch_size, 1, seq_len, no_channels)
             )  # Shape: (batch_size, num_quantiles, H, C)
 
             # Expand forecasts
-            forecasts_expanded = np.expand_dims(forecast_samples, axis=1)  # Shape: (batch_size, 1, H, C)
+            forecasts_expanded = np.expand_dims(
+                forecast_samples, axis=1
+            )  # Shape: (batch_size, 1, H, C)
             forecasts_expanded = np.tile(
                 forecasts_expanded, (1, num_quantiles, 1, 1)
             )  # Shape: (batch_size, num_quantiles, H, C)
@@ -349,7 +376,9 @@ class TTMGluonTSPredictor:
         """
         train_dataset_scaled = self._process_time_series(train_dataset)
         valid_dataset_scaled = self._process_time_series(valid_dataset)
-        logger.info(f"Number of series: Train = {len(train_dataset_scaled)}, Valid = {len(valid_dataset_scaled)}")
+        logger.info(
+            f"Number of series: Train = {len(train_dataset_scaled)}, Valid = {len(valid_dataset_scaled)}"
+        )
 
         # Standard scale
         if self.scale:
@@ -374,10 +403,15 @@ class TTMGluonTSPredictor:
 
         if automate_fewshot_fraction:
             fewshot_data_size = int(fewshot_fraction * len(dset_train_actual))
-            if fewshot_data_size < automate_fewshot_fraction_threshold and fewshot_data_size > 10:
+            if (
+                fewshot_data_size < automate_fewshot_fraction_threshold
+                and fewshot_data_size > 10
+            ):
                 fewshot_fraction = 0.9
                 num_epochs = 50  # easy to run large epochs since datasets are small
-                logger.info(f"Increasing fewshot fraction to {fewshot_fraction} due to small dataset size.")
+                logger.info(
+                    f"Increasing fewshot fraction to {fewshot_fraction} due to small dataset size."
+                )
 
         dset_valid_from_train = None
         if fewshot_fraction < 1.0:
@@ -387,7 +421,9 @@ class TTMGluonTSPredictor:
                 # Choose randomly
                 rng = np.random.default_rng(seed=self.random_seed)
                 if self.upper_bound_fewshot_samples:
-                    list_size = min(int(fewshot_fraction * len(dset_train)), FEWSHOT_MAX_NUM_SAMPLES)
+                    list_size = min(
+                        int(fewshot_fraction * len(dset_train)), FEWSHOT_MAX_NUM_SAMPLES
+                    )
                 else:
                     list_size = int(fewshot_fraction * len(dset_train))
 
@@ -400,7 +436,9 @@ class TTMGluonTSPredictor:
                 logger.info(f"Length of orginal train set = {len(dset_train)}")
 
                 dset_train = Subset(dset_train_actual, lst_fewshot_indx)
-                logger.info(f"Length of {fewshot_fraction * 100} % train set = {len(dset_train)}")
+                logger.info(
+                    f"Length of {fewshot_fraction * 100} % train set = {len(dset_train)}"
+                )
 
                 if len(dset_train) < 1:
                     raise ValueError(
@@ -464,7 +502,9 @@ class TTMGluonTSPredictor:
 
         self.train_num_samples = len(dset_train)
         self.valid_num_samples = len(dset_valid)
-        logger.info(f"Number of train samples = {self.train_num_samples}, valid samples = {self.valid_num_samples}")
+        logger.info(
+            f"Number of train samples = {self.train_num_samples}, valid samples = {self.valid_num_samples}"
+        )
 
         if freeze_backbone:
             logger.info(
@@ -524,7 +564,9 @@ class TTMGluonTSPredictor:
             save_strategy="epoch",
             logging_strategy="epoch",
             save_total_limit=1,
-            logging_dir=os.path.join(temp_dir, "logs"),  # Make sure to specify a logging directory
+            logging_dir=os.path.join(
+                temp_dir, "logs"
+            ),  # Make sure to specify a logging directory
             load_best_model_at_end=True,  # Load the best model when training ends
             metric_for_best_model="eval_loss",  # Metric to monitor for early stopping
             greater_is_better=False,  # For loss
@@ -583,7 +625,9 @@ class TTMGluonTSPredictor:
             if self.out_dir is not None:
                 hf_trainer.save_model(os.path.join(self.out_dir, "ttm_model"))
             else:
-                raise ValueError("`out_dir` should not be `None` when `save_model=True`.")
+                raise ValueError(
+                    "`out_dir` should not be `None` when `save_model=True`."
+                )
         if self.insample_forecast:
             self.insample_errors = self.get_insample_stats(
                 hf_trainer=hf_trainer,
@@ -594,7 +638,9 @@ class TTMGluonTSPredictor:
             )
 
         if self.train_num_samples <= 10:
-            raise Exception("Forcing zeroshot since number of finetune samples is very low.")
+            raise Exception(
+                "Forcing zeroshot since number of finetune samples is very low."
+            )
 
     def get_insample_stats(
         self,
@@ -654,7 +700,9 @@ class TTMGluonTSPredictor:
         )
 
         df["errors"] = (df["y_true"] - df["y_pred"]).abs()  # absolute error pointwise
-        errors = df.groupby(by="item_id")["errors"].mean()  # mean over all samples from a particular series
+        errors = df.groupby(by="item_id")[
+            "errors"
+        ].mean()  # mean over all samples from a particular series
 
         logger.info("Successfully, calculated the in-sample statistics.")
 
@@ -732,7 +780,9 @@ class TTMGluonTSPredictor:
         # We do not truncate the initial NaNs during testing since it sometimes
         # results in extremely short length, and inference fails.
         # Hence, in the current implementation the initial NaNs will be converted to zeros.
-        test_data_input_scaled = self._process_time_series(test_data_input, truncate=False)
+        test_data_input_scaled = self._process_time_series(
+            test_data_input, truncate=False
+        )
         # Standard scale
         if self.scale:
             test_data_input_scaled = self.scaler.transform(test_data_input_scaled)
@@ -742,7 +792,9 @@ class TTMGluonTSPredictor:
                 # Generate forecast samples
                 forecast_samples = []
                 series_ids = []
-                for batch in tqdm(batcher(test_data_input_scaled, batch_size=batch_size)):
+                for batch in tqdm(
+                    batcher(test_data_input_scaled, batch_size=batch_size)
+                ):
                     batch_ttm = {}
                     adjusted_batch_raw = []
                     past_observed_mask = []
@@ -756,7 +808,9 @@ class TTMGluonTSPredictor:
                             entry["target"] = entry["target"].reshape(1, -1)
 
                         if self.force_short_context:
-                            entry["target"] = entry["target"][:, -self.min_context_mult * self.prediction_length :]
+                            entry["target"] = entry["target"][
+                                :, -self.min_context_mult * self.prediction_length :
+                            ]
 
                         entry_context_length = entry["target"].shape[1]
                         num_channels = entry["target"].shape[0]
@@ -768,7 +822,8 @@ class TTMGluonTSPredictor:
                             padding = torch.zeros(
                                 (
                                     num_channels,
-                                    self.ttm.config.context_length - entry_context_length,
+                                    self.ttm.config.context_length
+                                    - entry_context_length,
                                 )
                             )
                             adjusted_entry = torch.cat(
@@ -785,34 +840,52 @@ class TTMGluonTSPredictor:
                         # Truncate
                         elif entry_context_length > self.ttm.config.context_length:
                             adjusted_entry = torch.tensor(
-                                impute_series(entry["target"][:, -self.ttm.config.context_length :])
+                                impute_series(
+                                    entry["target"][
+                                        :, -self.ttm.config.context_length :
+                                    ]
+                                )
                             )
                             mask = torch.ones(adjusted_entry.shape)
                         # Take full context
                         else:
-                            adjusted_entry = torch.tensor(impute_series(entry["target"]))
+                            adjusted_entry = torch.tensor(
+                                impute_series(entry["target"])
+                            )
                             mask = torch.ones(adjusted_entry.shape)
 
                         adjusted_batch_raw.append(adjusted_entry)
                         past_observed_mask.append(mask.bool())
 
                     # For TTM channel dimension comes at the end
-                    batch_ttm["past_values"] = torch.stack(adjusted_batch_raw).permute(0, 2, 1).to(self.device)
+                    batch_ttm["past_values"] = (
+                        torch.stack(adjusted_batch_raw).permute(0, 2, 1).to(self.device)
+                    )
                     if self.use_mask:
                         batch_ttm["past_observed_mask"] = (
-                            torch.stack(past_observed_mask).permute(0, 2, 1).to(self.device)
+                            torch.stack(past_observed_mask)
+                            .permute(0, 2, 1)
+                            .to(self.device)
                         )
                     if self.ttm.config.resolution_prefix_tuning:
                         freq_map = get_freq_mapping()
                         batch_ttm["freq_token"] = (
-                            torch.ones((batch_ttm["past_values"].shape[0])) * freq_map[self.freq]
+                            torch.ones((batch_ttm["past_values"].shape[0]))
+                            * freq_map[self.freq]
                         ).to("cuda")
 
                     if self.prediction_length > TTM_MAX_FORECAST_HORIZON:
                         batch_ttm["return_loss"] = False
 
-                        recursive_steps = int(np.ceil(self.prediction_length / self.ttm.config.prediction_length))
-                        predict_outputs = torch.empty(len(batch), 0, num_channels).to(self.device)
+                        recursive_steps = int(
+                            np.ceil(
+                                self.prediction_length
+                                / self.ttm.config.prediction_length
+                            )
+                        )
+                        predict_outputs = torch.empty(len(batch), 0, num_channels).to(
+                            self.device
+                        )
                         with torch.no_grad():
                             for i in range(recursive_steps):
                                 model_outputs = self.ttm(**batch_ttm)
@@ -827,7 +900,11 @@ class TTMGluonTSPredictor:
                                     batch_ttm["past_observed_mask"] = torch.cat(
                                         [
                                             batch_ttm["past_observed_mask"],
-                                            torch.ones(model_outputs["prediction_outputs"].shape)
+                                            torch.ones(
+                                                model_outputs[
+                                                    "prediction_outputs"
+                                                ].shape
+                                            )
                                             .bool()
                                             .to(self.device),
                                         ],
@@ -836,11 +913,15 @@ class TTMGluonTSPredictor:
                                 predict_outputs = torch.cat(
                                     [
                                         predict_outputs,
-                                        model_outputs["prediction_outputs"][:, : self.ttm.config.prediction_length, :],
+                                        model_outputs["prediction_outputs"][
+                                            :, : self.ttm.config.prediction_length, :
+                                        ],
                                     ],
                                     dim=1,
                                 )
-                        predict_outputs = predict_outputs[:, : self.prediction_length, :]
+                        predict_outputs = predict_outputs[
+                            :, : self.prediction_length, :
+                        ]
                     else:
                         model_outputs = self.ttm(**batch_ttm)
                         predict_outputs = model_outputs.prediction_outputs
@@ -860,15 +941,21 @@ class TTMGluonTSPredictor:
                             self.prediction_channel_indices,
                         )
                     else:
-                        forecast_samples = self.scaler.inverse_transform(forecast_samples, series_ids)
+                        forecast_samples = self.scaler.inverse_transform(
+                            forecast_samples, series_ids
+                        )
 
                 if self.prediction_length > TTM_MAX_FORECAST_HORIZON:
-                    forecast_samples = forecast_samples[:, :, : self.num_prediction_channels]
+                    forecast_samples = forecast_samples[
+                        :, :, : self.num_prediction_channels
+                    ]
 
                 if self.insample_forecast:
                     point_forecasts = np.expand_dims(forecast_samples, 1)
 
-                    self.quantiles = np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
+                    self.quantiles = np.array(
+                        [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+                    )
 
                     # Assuming forecasts, scale, and self.quantiles are defined
                     b, seq_len, no_channels = forecast_samples.shape
@@ -881,7 +968,9 @@ class TTMGluonTSPredictor:
                         self.insample_errors = pd.DataFrame(
                             {"item_id": unq_series_ids, "errors": dummy_errors_}
                         ).set_index("item_id")["errors"]
-                        logger.warning("`insample_errors` is `None`. Using a dummy error of `np.ones()`")
+                        logger.warning(
+                            "`insample_errors` is `None`. Using a dummy error of `np.ones()`"
+                        )
 
                     # happens for H > 720
                     if self.insample_errors.iloc[0].shape[0] < self.prediction_length:
@@ -890,13 +979,18 @@ class TTMGluonTSPredictor:
                                 (
                                     self.insample_errors.iloc[i],
                                     self.insample_errors.iloc[i][
-                                        -(self.prediction_length - self.insample_errors.iloc[i].shape[0]) :,
+                                        -(
+                                            self.prediction_length
+                                            - self.insample_errors.iloc[i].shape[0]
+                                        ) :,
                                         :,
                                     ],
                                 )
                             )
 
-                    logger.info(f"Making quantile forecasts for quantiles {self.quantiles}")
+                    logger.info(
+                        f"Making quantile forecasts for quantiles {self.quantiles}"
+                    )
                     all_quantile_forecasts = []
 
                     dataset = ForecastDataset(
@@ -917,7 +1011,9 @@ class TTMGluonTSPredictor:
                         ),
                     )
 
-                    all_quantile_forecasts = self.compute_quantile_forecasts(dataloader, self.quantiles)
+                    all_quantile_forecasts = self.compute_quantile_forecasts(
+                        dataloader, self.quantiles
+                    )
 
                 forecast_samples = np.array(all_quantile_forecasts)
                 if forecast_samples.shape[-1] == 1:
@@ -925,7 +1021,9 @@ class TTMGluonTSPredictor:
                 break
 
             except torch.cuda.OutOfMemoryError:
-                print(f"OutOfMemoryError at batch_size {batch_size}, reducing to {batch_size // 2}")
+                print(
+                    f"OutOfMemoryError at batch_size {batch_size}, reducing to {batch_size // 2}"
+                )
                 batch_size //= 2
 
         # Convert forecast samples into gluonts SampleForecast objects

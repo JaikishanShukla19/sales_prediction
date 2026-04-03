@@ -21,12 +21,21 @@ from .dataframe_checks import check
 from .dirutil import resolve_model_path
 from .errors import error_message
 from .inference_handler import InferenceHandler
-from .inference_payloads import ForecastingInferenceInput, ForecastingMetadataInput, PredictOutput
+from .inference_payloads import (
+    ForecastingInferenceInput,
+    ForecastingMetadataInput,
+    PredictOutput,
+)
 
-
-FORECAST_PROMETHEUS_TIME_SPENT = TSFM_HISTOGRAM("forecast_time_spent", "Wall clock time histogram.")
-FORECAST_PROMETHEUS_CPU_USED = TSFM_HISTOGRAM("forecast_cpu_user", "CPU user time histogram.")
-FORECAST_PROMETHEUS_MEMORY_USED = TSFM_HISTOGRAM("forecast_memory_used", "memory used histogram.")
+FORECAST_PROMETHEUS_TIME_SPENT = TSFM_HISTOGRAM(
+    "forecast_time_spent", "Wall clock time histogram."
+)
+FORECAST_PROMETHEUS_CPU_USED = TSFM_HISTOGRAM(
+    "forecast_cpu_user", "CPU user time histogram."
+)
+FORECAST_PROMETHEUS_MEMORY_USED = TSFM_HISTOGRAM(
+    "forecast_memory_used", "memory used histogram."
+)
 
 LOGGER = logging.getLogger(__file__)
 
@@ -87,7 +96,9 @@ class InferenceRuntime:
         LOGGER.info("done, returning.")
         return answer
 
-    def _forecast_common(self, input_payload: ForecastingInferenceInput) -> PredictOutput:
+    def _forecast_common(
+        self, input_payload: ForecastingInferenceInput
+    ) -> PredictOutput:
         model_path = resolve_model_path(TSFM_MODEL_DIR, input_payload.model_id)
 
         if not model_path:
@@ -100,7 +111,9 @@ class InferenceRuntime:
                     f"Could not load model {input_payload.model_id} from {TSFM_MODEL_DIR}. If trying to load directly from the HuggingFace Hub please ensure that `TSFM_ALLOW_LOAD_FROM_HF_HUB=1`"
                 )
 
-        handler, e = InferenceHandler.load(model_id=input_payload.model_id, model_path=model_path)
+        handler, e = InferenceHandler.load(
+            model_id=input_payload.model_id, model_path=model_path
+        )
         if e is not None:
             return None, e
 
@@ -115,7 +128,9 @@ class InferenceRuntime:
         if ex:
             return None, ValueError("future_data:" + str(ex))
 
-        quantile_calibration_data, ex = decode_data(input_payload.quantile_calibration_data, schema)
+        quantile_calibration_data, ex = decode_data(
+            input_payload.quantile_calibration_data, schema
+        )
         if ex:
             return None, ValueError("quantile_calibration_data:" + str(ex))
         if quantile_calibration_data is None or len(quantile_calibration_data) < 1:
@@ -127,7 +142,9 @@ class InferenceRuntime:
             handler_config, "maximum_context_length", None
         ):
             if schema.id_columns:
-                data_lengths = data.groupby(schema.id_columns)[schema.id_columns].apply(len)
+                data_lengths = data.groupby(schema.id_columns)[schema.id_columns].apply(
+                    len
+                )
                 min_len_index = data_lengths.argmin()
                 min_data_length = data_lengths.iloc[min_len_index]
                 max_data_length = data_lengths.max()
@@ -150,9 +167,13 @@ class InferenceRuntime:
         # truncate data length
         if getattr(handler_config, "maximum_context_length", None):
             if max_data_length > handler_config.maximum_context_length:
-                LOGGER.info(f"Truncating series lengths to {handler_config.maximum_context_length}")
+                LOGGER.info(
+                    f"Truncating series lengths to {handler_config.maximum_context_length}"
+                )
                 data = select_by_index(
-                    data, id_columns=schema.id_columns, start_index=-handler_config.maximum_context_length
+                    data,
+                    id_columns=schema.id_columns,
+                    start_index=-handler_config.maximum_context_length,
                 )
 
         _, e = handler.prepare(
@@ -179,7 +200,9 @@ class InferenceRuntime:
         return output, None
 
 
-def decode_data(data: Dict[str, List[Any]], schema: ForecastingMetadataInput) -> pd.DataFrame:
+def decode_data(
+    data: Dict[str, List[Any]], schema: ForecastingMetadataInput
+) -> pd.DataFrame:
     if not data:
         return None, None
 
@@ -191,7 +214,9 @@ def decode_data(data: Dict[str, List[Any]], schema: ForecastingMetadataInput) ->
         if rc != 0:
             return None, ValueError(msg)
 
-        if (ts_col := schema.timestamp_column) and pd.api.types.is_string_dtype(df[ts_col]):
+        if (ts_col := schema.timestamp_column) and pd.api.types.is_string_dtype(
+            df[ts_col]
+        ):
             df[ts_col] = pd.to_datetime(df[ts_col], format="ISO8601")
 
         sort_columns = copy.copy(schema.id_columns) if schema.id_columns else []

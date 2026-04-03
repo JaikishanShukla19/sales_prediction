@@ -15,7 +15,6 @@ from .conformal import (
     nonconformity_score_functions,
 )
 
-
 """
 P-VALUE AGGREGATION FUNCTIONS
 """
@@ -311,7 +310,9 @@ def get_forecast_conformal_adaptive_online_score(
     elif isinstance(forecast_steps, (list, tuple)):
         # forecast_steps is a list of 1-based step numbers; convert to 0-based indices
         horizon_indices = [int(s) - 1 for s in forecast_steps]
-        forecast_steps_max = max(horizon_indices) + 1  # inclusive upper bound for slicing
+        forecast_steps_max = (
+            max(horizon_indices) + 1
+        )  # inclusive upper bound for slicing
     else:
         forecast_steps_max = int(forecast_steps)
         horizon_indices = list(range(forecast_steps_max))
@@ -319,8 +320,12 @@ def get_forecast_conformal_adaptive_online_score(
     ## Align forecast at different steps for the same observation
     if align_forecast:
         phpp = PostHocProbabilisticProcessor()
-        y_pred = phpp.forecast_horizon_aggregation(y_pred[:, :forecast_steps_max, ...], aggregation=None)
-        y_true = phpp.forecast_horizon_aggregation(y_true[:, :forecast_steps_max, ...], aggregation=None)
+        y_pred = phpp.forecast_horizon_aggregation(
+            y_pred[:, :forecast_steps_max, ...], aggregation=None
+        )
+        y_true = phpp.forecast_horizon_aggregation(
+            y_true[:, :forecast_steps_max, ...], aggregation=None
+        )
     else:
         # Use the data as-is without alignment
         y_pred = y_pred[:, :forecast_steps_max, ...]
@@ -381,17 +386,23 @@ def get_forecast_conformal_adaptive_online_score(
                     "stride": weighting_optim_params["stride"],
                     "lr": weighting_optim_params["lr"],
                     "n_epochs": weighting_optim_params["n_epochs"],
-                    "prior_past_weights_value": weighting_optim_params["prior_past_weights_value"],
+                    "prior_past_weights_value": weighting_optim_params[
+                        "prior_past_weights_value"
+                    ],
                 },
             )
             ini_i_cal = ix_h
             end_i_cal = ix_h + int(np.ceil(1 / significance_level))
-            beta_cal = awcs.fit(nonconformity_scores_values[ini_i_cal:end_i_cal], beta_prior=beta_prior)
+            beta_cal = awcs.fit(
+                nonconformity_scores_values[ini_i_cal:end_i_cal], beta_prior=beta_prior
+            )
             if nonconformity_score in ["error"]:
                 beta_cal = np.minimum(1, 2 * np.minimum(beta_cal, 1 - beta_cal))
             outliers_scores[ini_i_cal:end_i_cal, ix_h, ix_f] = beta_cal
 
-            beta_all = awcs.predict(nonconformity_scores_values[end_i_cal:], beta_prior=beta_prior)
+            beta_all = awcs.predict(
+                nonconformity_scores_values[end_i_cal:], beta_prior=beta_prior
+            )
             if nonconformity_score in ["error"]:
                 beta_all = np.minimum(1, 2 * np.minimum(beta_all, 1 - beta_all))
             outliers_scores[end_i_cal:, ix_h, ix_f] = beta_all
@@ -409,13 +420,21 @@ def get_forecast_conformal_adaptive_online_score(
     if aggregation_forecast_horizon is not None:
         if aggregation_forecast_horizon in aggregation_methods:
             # Use aggregation methods from dictionary (requires looping over features)
-            scores = np.full((outliers_scores.shape[0], outliers_scores.shape[2]), np.nan)
+            scores = np.full(
+                (outliers_scores.shape[0], outliers_scores.shape[2]), np.nan
+            )
             for ix_f in range(outliers_scores.shape[2]):
                 # Extract scores for this feature across all observations and forecast horizons
-                feature_scores = outliers_scores[:, :, ix_f]  # shape: (n_obs, n_horizons)
-                scores[:, ix_f] = aggregation_methods[aggregation_forecast_horizon](feature_scores)
+                feature_scores = outliers_scores[
+                    :, :, ix_f
+                ]  # shape: (n_obs, n_horizons)
+                scores[:, ix_f] = aggregation_methods[aggregation_forecast_horizon](
+                    feature_scores
+                )
         else:
-            raise ValueError(f"Unknown aggregation_forecast_horizon: {aggregation_forecast_horizon}")
+            raise ValueError(
+                f"Unknown aggregation_forecast_horizon: {aggregation_forecast_horizon}"
+            )
     else:
         # No aggregation across forecast horizon, keep all dimensions
         scores = outliers_scores
@@ -433,7 +452,9 @@ def get_forecast_conformal_adaptive_online_score(
                 aggregated_scores = np.full((scores.shape[0], scores.shape[1]), np.nan)
                 for ix_h in range(scores.shape[1]):
                     horizon_scores = scores[:, ix_h, :]  # shape: (n_obs, n_features)
-                    aggregated_scores[:, ix_h] = aggregation_methods[aggregation_features](horizon_scores)
+                    aggregated_scores[:, ix_h] = aggregation_methods[
+                        aggregation_features
+                    ](horizon_scores)
                 scores = aggregated_scores
         else:
             raise ValueError(f"Unknown aggregation_features: {aggregation_features}")

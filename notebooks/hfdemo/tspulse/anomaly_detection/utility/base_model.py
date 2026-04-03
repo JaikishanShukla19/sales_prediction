@@ -56,7 +56,9 @@ class BaseDetector(metaclass=abc.ABCMeta):
     def __init__(self, contamination=0.1):
         if isinstance(contamination, (float, int)):
             if not (0.0 < contamination <= 0.5):
-                raise ValueError("contamination must be in (0, 0.5], got: %f" % contamination)
+                raise ValueError(
+                    "contamination must be in (0, 0.5], got: %f" % contamination
+                )
 
         # allow arbitrary input such as PyThreshld object
         self.contamination = contamination
@@ -208,7 +210,9 @@ class BaseDetector(metaclass=abc.ABCMeta):
         probs = np.zeros([X.shape[0], int(self._classes)])
         if method == "linear":
             scaler = MinMaxScaler().fit(train_scores.reshape(-1, 1))
-            probs[:, 1] = scaler.transform(test_scores.reshape(-1, 1)).ravel().clip(0, 1)
+            probs[:, 1] = (
+                scaler.transform(test_scores.reshape(-1, 1)).ravel().clip(0, 1)
+            )
             probs[:, 0] = 1 - probs[:, 1]
 
             if return_confidence:
@@ -259,7 +263,9 @@ class BaseDetector(metaclass=abc.ABCMeta):
         # already be available
         test_scores = self.decision_function(X)
 
-        count_instances = np.vectorize(lambda x: np.count_nonzero(self.decision_scores_ <= x))
+        count_instances = np.vectorize(
+            lambda x: np.count_nonzero(self.decision_scores_ <= x)
+        )
         n_instances = count_instances(test_scores)
 
         # Derive the outlier probability using Bayesian approach
@@ -272,7 +278,9 @@ class BaseDetector(metaclass=abc.ABCMeta):
             contam = self.contamination
 
         # Transform the outlier probability into a confidence value
-        confidence = np.vectorize(lambda p: 1 - binom.cdf(n - int(n * contam), n, p))(posterior_prob)
+        confidence = np.vectorize(lambda p: 1 - binom.cdf(n - int(n * contam), n, p))(
+            posterior_prob
+        )
 
         if isinstance(self.contamination, (float, int)):
             prediction = (test_scores > self.threshold_).astype("int").ravel()
@@ -352,7 +360,9 @@ class BaseDetector(metaclass=abc.ABCMeta):
         elif scoring == "prc_n_score":
             score = precision_n_scores(y, self.decision_scores_)
         else:
-            raise NotImplementedError("PyOD built-in scoring only supports ROC and Precision @ rank n")
+            raise NotImplementedError(
+                "PyOD built-in scoring only supports ROC and Precision @ rank n"
+            )
 
         print("{metric}: {score}".format(metric=scoring, score=score))
 
@@ -423,8 +433,12 @@ class BaseDetector(metaclass=abc.ABCMeta):
         """
 
         if isinstance(self.contamination, (float, int)):
-            self.threshold_ = percentile(self.decision_scores_, 100 * (1 - self.contamination))
-            self.labels_ = (self.decision_scores_ > self.threshold_).astype("int").ravel()
+            self.threshold_ = percentile(
+                self.decision_scores_, 100 * (1 - self.contamination)
+            )
+            self.labels_ = (
+                (self.decision_scores_ > self.threshold_).astype("int").ravel()
+            )
 
         # if this is a PyThresh object
         else:
@@ -460,7 +474,11 @@ class BaseDetector(metaclass=abc.ABCMeta):
         # to represent
         init_signature = signature(init)
         # Consider the constructor parameters excluding 'self'
-        parameters = [p for p in init_signature.parameters.values() if p.name != "self" and p.kind != p.VAR_KEYWORD]
+        parameters = [
+            p
+            for p in init_signature.parameters.values()
+            if p.name != "self" and p.kind != p.VAR_KEYWORD
+        ]
         for p in parameters:
             if p.kind == p.VAR_POSITIONAL:
                 raise RuntimeError(

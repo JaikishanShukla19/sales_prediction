@@ -17,7 +17,6 @@ from . import (
 from .constants import API_VERSION
 from .inference import InferenceRuntime
 
-
 logging.basicConfig(
     format=TSFM_PYTHON_LOGGING_FORMAT,
     level=TSFM_PYTHON_LOGGING_LEVEL,

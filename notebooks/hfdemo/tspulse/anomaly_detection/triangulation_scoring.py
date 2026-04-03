@@ -57,15 +57,23 @@ def triangulation_performance(
     tuning_prefix = f"{prefix}{tuning_file_prefix}"
     eval_prefix = f"{prefix}{eval_file_prefix}"
 
-    selected_files, modes = select_result_files(root_directory, prefix=tuning_prefix, suffix=suffix)
+    selected_files, modes = select_result_files(
+        root_directory, prefix=tuning_prefix, suffix=suffix
+    )
     tuning_performance = {}
     for m, f in zip(modes, selected_files):
-        tuning_performance[m] = compute_average_performance(os.path.join(root_directory, f), metric=metric)
+        tuning_performance[m] = compute_average_performance(
+            os.path.join(root_directory, f), metric=metric
+        )
     tuning_performance = pd.DataFrame(tuning_performance)
     cols = tuning_performance.columns.tolist()
-    tuning_performance["best"] = [cols[c] for c in np.argmax(tuning_performance.values, axis=1)]
+    tuning_performance["best"] = [
+        cols[c] for c in np.argmax(tuning_performance.values, axis=1)
+    ]
 
-    selected_files, modes = select_result_files(root_directory, prefix=eval_prefix, suffix=suffix)
+    selected_files, modes = select_result_files(
+        root_directory, prefix=eval_prefix, suffix=suffix
+    )
     eval_performance, grp_size = {}, {}
     for m, f in zip(modes, selected_files):
         eval_performance[m], grp_size = compute_average_performance(
@@ -75,17 +83,27 @@ def triangulation_performance(
 
     score, size = 0, 0
     for d_index in eval_performance.index:
-        sel_mode = tuning_performance.loc[d_index, "best"] if d_index in tuning_performance.index else "time"
+        sel_mode = (
+            tuning_performance.loc[d_index, "best"]
+            if d_index in tuning_performance.index
+            else "time"
+        )
         sz = grp_size.get(d_index, 1)
         score += eval_performance.loc[d_index, sel_mode] * sz
         size += sz
 
-    return {"tuning": tuning_performance, "evaluation": eval_performance, "metric": score / size}
+    return {
+        "tuning": tuning_performance,
+        "evaluation": eval_performance,
+        "metric": score / size,
+    }
 
 
 if __name__ == "__main__":
     ## ArgumentParser
-    root_directory = os.path.join(os.path.dirname(os.path.abspath(__file__)), "benchmarks")
+    root_directory = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "benchmarks"
+    )
     univariate_prefix = "TSB-AD-U-"
     metric = "VUS-PR"
     suffix = ".csv"

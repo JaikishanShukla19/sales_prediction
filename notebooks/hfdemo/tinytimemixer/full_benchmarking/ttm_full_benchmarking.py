@@ -28,7 +28,6 @@ from tsfm_public.toolkit.get_model import get_model
 from tsfm_public.toolkit.lr_finder import optimal_lr_finder
 from tsfm_public.toolkit.visualization import plot_predictions
 
-
 warnings.filterwarnings("ignore")
 
 # Arguments
@@ -59,7 +58,9 @@ OUT_DIR = args.save_dir
 
 MODEL_PATH = args.hf_model_path
 
-print(f"{'*' * 20} Pre-training a TTM for context len = {CONTEXT_LENGTH}, forecast len = {FORECAST_LENGTH} {'*' * 20}")
+print(
+    f"{'*' * 20} Pre-training a TTM for context len = {CONTEXT_LENGTH}, forecast len = {FORECAST_LENGTH} {'*' * 20}"
+)
 
 ## List of benchmark datasets (TTM was not pre-trained on any of these)
 
@@ -124,7 +125,9 @@ for DATASET in list_datasets:
         #############################################################
         # Load model
         zeroshot_model = get_model(
-            model_path=MODEL_PATH, context_length=CONTEXT_LENGTH, prediction_length=FORECAST_LENGTH
+            model_path=MODEL_PATH,
+            context_length=CONTEXT_LENGTH,
+            prediction_length=FORECAST_LENGTH,
         )
 
         # zeroshot_trainer
@@ -175,7 +178,9 @@ for DATASET in list_datasets:
             raise Exception("fewshot is not enabled")
         for fewshot_percent in [5]:
             # Set learning rate
-            learning_rate = None  # `None` value indicates that the optimal_lr_finder() will be used
+            learning_rate = (
+                None  # `None` value indicates that the optimal_lr_finder() will be used
+            )
 
             print("-" * 20, f"Running few-shot {fewshot_percent}%", "-" * 20)
             # Data prep: Get dataset
@@ -279,7 +284,9 @@ for DATASET in list_datasets:
                 callbacks=[early_stopping_callback, tracking_callback],
                 optimizers=(optimizer, scheduler),
             )
-            finetune_forecast_trainer.remove_callback(INTEGRATION_TO_CALLBACK["codecarbon"])
+            finetune_forecast_trainer.remove_callback(
+                INTEGRATION_TO_CALLBACK["codecarbon"]
+            )
 
             # Fine tune
             finetune_forecast_trainer.train()

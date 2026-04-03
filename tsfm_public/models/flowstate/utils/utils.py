@@ -22,7 +22,9 @@ def get_fixed_factor(freq: str, domain=None):
     elif freq == "H":
         factor = BASE_SEASON / 24
     elif freq == "6H":
-        factor = BASE_SEASON / 4  # only CMIP6 in pretraining --> 24. / 4 or 24 / 365*4 would be better!
+        factor = (
+            BASE_SEASON / 4
+        )  # only CMIP6 in pretraining --> 24. / 4 or 24 / 365*4 would be better!
     elif freq == "D":
         if has_weekly:
             factor = BASE_SEASON / 7
@@ -44,5 +46,7 @@ def get_fixed_factor(freq: str, domain=None):
     elif "A" in freq:
         factor = BASE_SEASON / 4.0  # leap year ??
     else:
-        raise NotImplementedError(f"{freq} not implemented. Add {freq} option to this method")
+        raise NotImplementedError(
+            f"{freq} not implemented. Add {freq} option to this method"
+        )
     return factor

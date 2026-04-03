@@ -42,7 +42,9 @@ def compute_remaining_time(start_time, current_step, max_steps):
     remaining_steps = max_steps - current_step
     remaining_time = elapsed_time * remaining_steps / current_step
     second_per_step = elapsed_time / current_step
-    return f"{to_hms(elapsed_time)}<{to_hms(remaining_time)} ({second_per_step:.2f}s/step)"
+    return (
+        f"{to_hms(elapsed_time)}<{to_hms(remaining_time)} ({second_per_step:.2f}s/step)"
+    )
 
 
 class Timer:
@@ -206,7 +208,9 @@ class CSVLogger:
         os.makedirs(f"{self.fig_dir}/VAL")
 
     def log_scalar(self, tag: str, value: float, step: int):
-        self.scalar_data.append({"timestamp": datetime.now(), "step": step, "tag": tag, "value": value})
+        self.scalar_data.append(
+            {"timestamp": datetime.now(), "step": step, "tag": tag, "value": value}
+        )
 
     def save(self):
         # Save to CSV

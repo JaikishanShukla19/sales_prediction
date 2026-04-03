@@ -67,6 +67,8 @@ class TrackingCallback(TrainerCallback):
         self.epoch_end_time = time.time()
         self.last_epoch_time = self.epoch_end_time - self.epoch_start_time
         if self.verbose:
-            print(f"[{self.__class__.__name__}] Epoch Time = {self.last_epoch_time} seconds")
+            print(
+                f"[{self.__class__.__name__}] Epoch Time = {self.last_epoch_time} seconds"
+            )
         self.all_epoch_times.append(self.last_epoch_time)
         return super().on_epoch_end(args, state, control, **kwargs)

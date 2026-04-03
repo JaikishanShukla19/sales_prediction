@@ -3,14 +3,12 @@
 import sys
 from pathlib import Path
 
-
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import numpy as np
 import torch
 from tirex import ForecastModel, load_model
 from utils import create_rolling_forecast_contexts
-
 
 TIREX_MODELS = {
     "tirex": {
@@ -74,7 +72,9 @@ def tirex_forecaster(
         if model_name in TIREX_MODELS:
             model_checkpoint = TIREX_MODELS[model_name]["model_checkpoint"]
         else:
-            raise ValueError(f"Unknown model_name: {model_name}. Provide model_checkpoint explicitly.")
+            raise ValueError(
+                f"Unknown model_name: {model_name}. Provide model_checkpoint explicitly."
+            )
 
     # Load TiRex model
     pipeline: ForecastModel = load_model(model_checkpoint, device=device_map)
@@ -125,7 +125,11 @@ def tirex_forecaster(
             )
 
             # Convert to numpy
-            batch_m = batch_m.detach().cpu().numpy() if hasattr(batch_m, "detach") else np.asarray(batch_m)
+            batch_m = (
+                batch_m.detach().cpu().numpy()
+                if hasattr(batch_m, "detach")
+                else np.asarray(batch_m)
+            )
             m_all.append(batch_m)
 
         # Concatenate batch results

@@ -21,7 +21,6 @@ from transformers.data.data_collator import default_data_collator
 from transformers.trainer_utils import RemoveColumnsCollator
 from transformers.utils import logging
 
-
 logger = logging.get_logger(__name__)
 
 
@@ -37,7 +36,11 @@ def join_path_file(file: Union[str, Path], path: Union[str, Path], ext: str = ""
 
 def get_model(model: Union[nn.Module, PreTrainedModel]):
     "Return the model maybe wrapped inside `model`."
-    return model.module if isinstance(model, (DistributedDataParallel, nn.DataParallel)) else model
+    return (
+        model.module
+        if isinstance(model, (DistributedDataParallel, nn.DataParallel))
+        else model
+    )
 
 
 def save_model(
@@ -57,7 +60,12 @@ def save_model(
 
 
 def load_model(
-    path, model, opt: Optional[Optimizer] = None, with_opt: bool = False, device: str = "cpu", strict: bool = True
+    path,
+    model,
+    opt: Optional[Optimizer] = None,
+    with_opt: bool = False,
+    device: str = "cpu",
+    strict: bool = True,
 ) -> nn.Module:
     "load the saved model"
     state = torch.load(path, map_location=device)
@@ -80,7 +88,9 @@ class LinearLR(_LRScheduler):
         last_epoch (int, optional): the index of last epoch. Default: -1.
     """
 
-    def __init__(self, optimizer: Optimizer, end_lr: float, num_iter: int, last_epoch: int = -1):
+    def __init__(
+        self, optimizer: Optimizer, end_lr: float, num_iter: int, last_epoch: int = -1
+    ):
         self.end_lr = end_lr
         if num_iter <= 1:
             raise ValueError("`num_iter` must be larger than 1")
@@ -102,7 +112,9 @@ class ExponentialLR(_LRScheduler):
         last_epoch (int, optional): the index of last epoch. Default: -1.
     """
 
-    def __init__(self, optimizer: Optimizer, end_lr: float, num_iter: int, last_epoch: int = -1):
+    def __init__(
+        self, optimizer: Optimizer, end_lr: float, num_iter: int, last_epoch: int = -1
+    ):
         self.end_lr = end_lr
         self.last_epoch = last_epoch
         if num_iter <= 1:
@@ -172,11 +184,19 @@ class LRFinder:
         save_model(fname, self.model, getattr(self, "opt", None), **kwargs)
         return fname
 
-    def load(self, fname: Union[str, Path], with_opt: bool = False, strict: bool = True, **kwargs):
+    def load(
+        self,
+        fname: Union[str, Path],
+        with_opt: bool = False,
+        strict: bool = True,
+        **kwargs,
+    ):
         """
         load the model
         """
-        load_model(fname, self.model, self.opt, with_opt, device=self.device, strict=strict)
+        load_model(
+            fname, self.model, self.opt, with_opt, device=self.device, strict=strict
+        )
 
     def before_fit(self):
         self.model.to(self.device)
@@ -188,7 +208,9 @@ class LRFinder:
 
         # save model to load back after fitting
         uid = uuid.uuid4().hex
-        self.temp_path = self.save(f"current_{uid}", tempfile.gettempdir(), with_opt=False)
+        self.temp_path = self.save(
+            f"current_{uid}", tempfile.gettempdir(), with_opt=False
+        )
         # set base_lr for the optimizer
         self.set_lr(self.start_lr)
 
@@ -217,11 +239,15 @@ class LRFinder:
         # update weights
         self.opt.step()
 
-    def process_data(self, x: torch.Tensor, y: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def process_data(
+        self, x: torch.Tensor, y: torch.Tensor
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         x, y = x.to(self.device), y.to(self.device)
         return x, y
 
-    def train_step(self, batch: Union[Dict[str, Any], torch.Tensor]) -> Tuple[torch.Tensor, float]:
+    def train_step(
+        self, batch: Union[Dict[str, Any], torch.Tensor]
+    ) -> Tuple[torch.Tensor, float]:
         # get the inputs
         if isinstance(batch, dict):
             signature = inspect.signature(self.model.forward)
@@ -275,7 +301,9 @@ class LRFinder:
         if self.suggestion == "valley":
             self.suggested_lr = valley(self.lrs, self.losses)
         else:
-            raise ValueError(f"Unsupported lr suggestion mechanism '{self.suggestion}'.")
+            raise ValueError(
+                f"Unsupported lr suggestion mechanism '{self.suggestion}'."
+            )
         # recorder the suggested learning rate
         self.recorder["suggested_lr"] = self.suggested_lr
         # load back the model at the previous state
@@ -287,7 +315,8 @@ class LRFinder:
             lrs = [lrs] * len(self.opt.param_groups)
         if len(lrs) != len(self.opt.param_groups):
             raise ValueError(
-                "Length of `lrs` is not equal to the number of parameter groups " + "in the given optimizer"
+                "Length of `lrs` is not equal to the number of parameter groups "
+                + "in the given optimizer"
             )
         # update lr
         for param_group, lr in zip(self.opt.param_groups, lrs):
@@ -399,7 +428,10 @@ def optimal_lr_finder(
     )
 
     dl_train = DataLoader(
-        dataset=dset_train, batch_size=batch_size, shuffle=shuffle, collate_fn=remove_columns_collator
+        dataset=dset_train,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        collate_fn=remove_columns_collator,
     )
 
     n_epochs = num_iter // len(dl_train) + 1

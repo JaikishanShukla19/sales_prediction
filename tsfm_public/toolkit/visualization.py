@@ -18,7 +18,6 @@ from transformers import PreTrainedModel
 
 from .time_series_preprocessor import create_timestamps
 
-
 try:
     import matplotlib.pyplot as plt
     import seaborn as sns
@@ -92,7 +91,9 @@ def plot_ts_forecasting(
     # plot true data
 
     if not HAVE_SEABORN and plot_type == "seaborn":
-        raise ValueError("Please install the seaborn package if seaborn plots are needed.")
+        raise ValueError(
+            "Please install the seaborn package if seaborn plots are needed."
+        )
 
     # if plot_start > len(test_data_updated):
     #     logging.warning(
@@ -145,7 +146,9 @@ def plot_ts_forecasting(
 
     # index into the predictions so that the end of the prediction coincides with the end of the ground truth
     #
-    predictions_end = plot_range[-1] - prediction_length - context_length + 1  #  - context_length - prediction_length
+    predictions_end = (
+        plot_range[-1] - prediction_length - context_length + 1
+    )  #  - context_length - prediction_length
 
     predictions_start = plot_range[0] - context_length
 
@@ -159,7 +162,9 @@ def plot_ts_forecasting(
         if plot_type == "plotly":
             for i in plot_index:
                 start = forecast_data.iloc[i][timestamp_column]
-                timestamps = pd.date_range(start, freq=periodicity, periods=prediction_length + 1)
+                timestamps = pd.date_range(
+                    start, freq=periodicity, periods=prediction_length + 1
+                )
                 timestamp = timestamps[1:]
                 forecast_val = forecast_data.iloc[i][forecast_name]
                 plot_line(
@@ -267,9 +272,13 @@ def plot_predictions(
         # We expect the context and predictions to contain the channel
         pchannel = f"{channel}_prediction"
         if pchannel not in exploded_predictions_df.columns:
-            raise ValueError(f"Predictions dataframe does not contain target column '{pchannel}'.")
+            raise ValueError(
+                f"Predictions dataframe does not contain target column '{pchannel}'."
+            )
         if channel not in input_df.columns:
-            raise ValueError(f"Context dataframe does not contain target column '{channel}'.")
+            raise ValueError(
+                f"Context dataframe does not contain target column '{channel}'."
+            )
 
         num_plots = 1
         prediction_length = len(exploded_predictions_df)
@@ -279,7 +288,11 @@ def plot_predictions(
         indices = [-1]  # indices not used in exploded case
     elif input_df is not None and predictions_df is not None:
         # 2) input_df and predictions plus column information is provided
-        pchannel = f"{channel}_prediction" if f"{channel}_prediction" in predictions_df else channel
+        pchannel = (
+            f"{channel}_prediction"
+            if f"{channel}_prediction" in predictions_df
+            else channel
+        )
 
         if indices is None:
             l = len(predictions_df)
@@ -308,9 +321,13 @@ def plot_predictions(
             random_samples = {}
             for k in dset_keys:
                 if k in signature_keys:
-                    random_samples[k] = torch.stack([dset[i][k] for i in indices]).to(device=device)
+                    random_samples[k] = torch.stack([dset[i][k] for i in indices]).to(
+                        device=device
+                    )
             output = model(**random_samples)
-            predictions_subset = output.prediction_outputs[:, :, channel].squeeze().cpu().numpy()
+            predictions_subset = (
+                output.prediction_outputs[:, :, channel].squeeze().cpu().numpy()
+            )
             prediction_length = predictions_subset.shape[1]
         using_pipeline = False
         plot_test_data = True
@@ -333,7 +350,11 @@ def plot_predictions(
 
     for i, index in enumerate(indices):
         if using_pipeline and plot_test_data:
-            ts_y_hat = create_timestamps(predictions_subset[i][timestamp_column], freq=freq, periods=prediction_length)
+            ts_y_hat = create_timestamps(
+                predictions_subset[i][timestamp_column],
+                freq=freq,
+                periods=prediction_length,
+            )
             y_hat = (
                 predictions_subset[i][f"{channel}_prediction"]
                 if f"{channel}_prediction" in predictions_subset[i]
@@ -352,7 +373,9 @@ def plot_predictions(
 
         elif using_pipeline:
             ts_y_hat = create_timestamps(
-                exploded_predictions_df[timestamp_column].iloc[0], freq=freq, periods=prediction_length
+                exploded_predictions_df[timestamp_column].iloc[0],
+                freq=freq,
+                periods=prediction_length,
             )
             y_hat = exploded_predictions_df[f"{channel}_prediction"]
 
@@ -366,7 +389,9 @@ def plot_predictions(
         else:
             batch = dset[index]
             feasible_plot_context = min(plot_context, batch["past_values"].shape[0])
-            ts_y_hat = np.arange(feasible_plot_context, feasible_plot_context + prediction_length)
+            ts_y_hat = np.arange(
+                feasible_plot_context, feasible_plot_context + prediction_length
+            )
             y_hat = predictions_subset[i]
 
             ts_y = np.arange(feasible_plot_context + prediction_length)
@@ -377,7 +402,14 @@ def plot_predictions(
             plot_title = f"Example {indices[i]}"
 
         # Plot predicted values with a dashed line
-        axs[i].plot(ts_y_hat, y_hat, label="Predicted", linestyle="--", color="orange", linewidth=2)
+        axs[i].plot(
+            ts_y_hat,
+            y_hat,
+            label="Predicted",
+            linestyle="--",
+            color="orange",
+            linewidth=2,
+        )
 
         # Plot true values with a solid line
         axs[i].plot(ts_y, y, label="True", linestyle="-", color="blue", linewidth=2)

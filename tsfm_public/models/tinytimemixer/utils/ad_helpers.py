@@ -11,8 +11,14 @@ from sklearn.preprocessing import MinMaxScaler as MinMaxScaler_
 from torch import nn as nn
 from transformers.utils.generic import ModelOutput
 
-from tsfm_public.models.tinytimemixer.modeling_tinytimemixer import TinyTimeMixerForPrediction
-from tsfm_public.toolkit.ad_helpers import AnomalyScoreMethods, ScoreListType, TSADHelperUtility
+from tsfm_public.models.tinytimemixer.modeling_tinytimemixer import (
+    TinyTimeMixerForPrediction,
+)
+from tsfm_public.toolkit.ad_helpers import (
+    AnomalyScoreMethods,
+    ScoreListType,
+    TSADHelperUtility,
+)
 from tsfm_public.toolkit.conformal import PostHocProbabilisticProcessor
 
 
@@ -98,8 +104,12 @@ class TinyTimeMixerADUtility(TSADHelperUtility):
         if use_forecast:
             # forecast output
             reduction_axis = [1] if expand_score else [1, 2]
-            pointwise_score = anomaly_criterion(batch_future_values[:, 0, :], future_predictions[:, 0, :]).unsqueeze(1)
-            scores[AnomalyScoreMethods.PREDICTIVE.value] = torch.mean(pointwise_score, dim=reduction_axis)
+            pointwise_score = anomaly_criterion(
+                batch_future_values[:, 0, :], future_predictions[:, 0, :]
+            ).unsqueeze(1)
+            scores[AnomalyScoreMethods.PREDICTIVE.value] = torch.mean(
+                pointwise_score, dim=reduction_axis
+            )
         if use_meandev:
             deviation = batch_future_values - future_predictions
             # if we are not expanding, we take mean across variate dimension
@@ -149,14 +159,18 @@ class TinyTimeMixerADUtility(TSADHelperUtility):
         score_exponent = self._score_exponent
         start_pad_len = self._model.config.context_length
         end_pad_len = (
-            0 if key == AnomalyScoreMethods.MEAN_DEVIATION.value else self._model.config.prediction_length - 1
+            0
+            if key == AnomalyScoreMethods.MEAN_DEVIATION.value
+            else self._model.config.prediction_length - 1
         )
 
         if key == AnomalyScoreMethods.PROBABILISTIC.value:
             if len(x.shape) == 2:
                 x = np.expand_dims(x, -1)
             x = self._probabilistic_processor.forecast_horizon_aggregation(x)
-            score = np.array([x[0]] * start_pad_len + list(x) + [x[-1]] * end_pad_len)  # (?)
+            score = np.array(
+                [x[0]] * start_pad_len + list(x) + [x[-1]] * end_pad_len
+            )  # (?)
             return score
 
         if key == AnomalyScoreMethods.MEAN_DEVIATION.value:
@@ -178,7 +192,10 @@ class TinyTimeMixerADUtility(TSADHelperUtility):
         min_score = 0.0
         if reference is not None:
             reference_data = np.asarray(reference)
-            min_score = self._least_significant_scale * np.nanstd(reference_data, axis=0, keepdims=True) ** 2
+            min_score = (
+                self._least_significant_scale
+                * np.nanstd(reference_data, axis=0, keepdims=True) ** 2
+            )
             if min_score.shape[-1] != score.shape[-1]:
                 min_score = np.nanmax(min_score, axis=-1)
             if key == AnomalyScoreMethods.PREDICTIVE.value:

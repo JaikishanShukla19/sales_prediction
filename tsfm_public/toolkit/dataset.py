@@ -14,7 +14,6 @@ import torch
 
 from .util import check_nested_lengths, is_nested_dataframe, join_list_without_repeat
 
-
 LOGGER = logging.getLogger(__file__)
 
 
@@ -68,14 +67,22 @@ class BaseDFDataset(torch.utils.data.Dataset):
 
         if len(x_cols) > 0:
             there, missing = is_cols_in_df(data_df, x_cols)
-            assert there, f"{missing} given in {x_cols} is not a valid column identifier in the data."
+            assert (
+                there
+            ), f"{missing} given in {x_cols} is not a valid column identifier in the data."
 
         if len(y_cols) > 0:
             there, missing = is_cols_in_df(data_df, y_cols)
-            assert there, f"{missing} given in {y_cols} is not a valid column identifier in the data."
+            assert (
+                there
+            ), f"{missing} given in {y_cols} is not a valid column identifier in the data."
 
-        assert prediction_length >= 0, f"prediction_length must be non-negative, received: {prediction_length}"
-        assert context_length > 0, f"context_length must be positive, received: {context_length}"
+        assert (
+            prediction_length >= 0
+        ), f"prediction_length must be non-negative, received: {prediction_length}"
+        assert (
+            context_length > 0
+        ), f"context_length must be positive, received: {context_length}"
 
         if timestamp_column:
             assert timestamp_column in list(
@@ -116,7 +123,9 @@ class BaseDFDataset(torch.utils.data.Dataset):
                 )
 
         if timestamp_column in list(data_df.columns):
-            self.timestamps = data_df[timestamp_column].to_list()  # .values coerces timestamps
+            self.timestamps = data_df[
+                timestamp_column
+            ].to_list()  # .values coerces timestamps
         # get the input data
         if len(x_cols) > 0:
             self.X = data_df[x_cols]
@@ -148,7 +157,11 @@ class BaseDFDataset(torch.utils.data.Dataset):
         )
 
     def __len__(self):
-        return max((len(self.X) - self.context_length - self.prediction_length) // self.stride + 1, 0)
+        return max(
+            (len(self.X) - self.context_length - self.prediction_length) // self.stride
+            + 1,
+            0,
+        )
 
     def _check_index(self, index: int) -> int:
         if index >= len(self):
@@ -156,7 +169,9 @@ class BaseDFDataset(torch.utils.data.Dataset):
 
         if index < 0:
             if -index > len(self):
-                raise ValueError("Absolute value of index should not exceed dataset length")
+                raise ValueError(
+                    "Absolute value of index should not exceed dataset length"
+                )
             index = len(self) + index
         return index
 
@@ -200,7 +215,9 @@ class BaseConcatDFDataset(torch.utils.data.ConcatDataset):
     ):
         if len(id_columns) > 0:
             there, missing = is_cols_in_df(data_df, id_columns)
-            assert there, f"{missing} given in {id_columns} is not a valid column in the data."
+            assert (
+                there
+            ), f"{missing} given in {id_columns} is not a valid column in the data."
 
         self.timestamp_column = timestamp_column
         self.id_columns = id_columns
@@ -480,7 +497,9 @@ class ForecastDFDataset(BaseConcatDFDataset):
         autoregressive_modeling: bool = True,
         stride: int = 1,
         fill_value: Union[float, int] = 0.0,
-        masking_specification: Optional[List[Tuple[str, Union[int, Tuple[int, int]]]]] = None,
+        masking_specification: Optional[
+            List[Tuple[str, Union[int, Tuple[int, int]]]]
+        ] = None,
         enable_padding: bool = True,
         metadata_columns: List[str] = [],
         impute_method: Optional[str] = ImputeMethod.FILL.value,
@@ -552,7 +571,9 @@ class ForecastDFDataset(BaseConcatDFDataset):
             autoregressive_modeling: bool = True,
             stride: int = 1,
             fill_value: Union[float, int] = 0.0,
-            masking_specification: Optional[List[Tuple[str, Union[int, Tuple[int, int]]]]] = None,
+            masking_specification: Optional[
+                List[Tuple[str, Union[int, Tuple[int, int]]]]
+            ] = None,
             enable_padding: bool = True,
             metadata_columns: List[str] = [],
             impute_method: Optional[str] = ImputeMethod.FILL.value,
@@ -591,7 +612,9 @@ class ForecastDFDataset(BaseConcatDFDataset):
                 )
 
             # masking for conditional values which are not observed during future period
-            self.y_mask_conditional = np.array([(c in conditional_columns) for c in y_cols])
+            self.y_mask_conditional = np.array(
+                [(c in conditional_columns) for c in y_cols]
+            )
 
             # create a mask of x which masks targets
             self.x_mask_targets = np.array([(c in target_columns) for c in x_cols])
@@ -622,7 +645,10 @@ class ForecastDFDataset(BaseConcatDFDataset):
                 if not self.expanding_window
                 else max(0, time_id - self.max_context_length + self.context_length)
             )  # check me
-            seq_x = np.ones((self.max_context_length, self.X.shape[1]), dtype=np.float32) * np.nan
+            seq_x = (
+                np.ones((self.max_context_length, self.X.shape[1]), dtype=np.float32)
+                * np.nan
+            )
             seq_x[context_start - time_id - self.context_length :, :] = self.X.iloc[
                 context_start : time_id + self.context_length
             ].values.astype(np.float32)
@@ -651,14 +677,19 @@ class ForecastDFDataset(BaseConcatDFDataset):
 
             # seq_y: batch_size x pred_len x num_x_cols
             seq_y = self.y.iloc[
-                time_id + self.context_length : time_id + self.context_length + self.prediction_length
+                time_id
+                + self.context_length : time_id
+                + self.context_length
+                + self.prediction_length
             ].values.copy()
             seq_y[:, self.y_mask_conditional] = 0
 
             ret = {
                 "past_values": np_to_torch(seq_x_imputed),
                 "future_values": np_to_torch(
-                    np.nan_to_num(seq_y, nan=self.fill_value) if self.impute_method is not None else seq_y
+                    np.nan_to_num(seq_y, nan=self.fill_value)
+                    if self.impute_method is not None
+                    else seq_y
                 ),
                 "past_observed_mask": np_to_torch(~np.isnan(seq_x)),
                 "future_observed_mask": np_to_torch(~np.isnan(seq_y)),
@@ -674,18 +705,28 @@ class ForecastDFDataset(BaseConcatDFDataset):
                 ret["freq_token"] = torch.tensor(self.frequency_token, dtype=torch.int)
 
             if self.static_categorical_columns:
-                categorical_values = self.data_df[self.static_categorical_columns].values[0, :]
+                categorical_values = self.data_df[
+                    self.static_categorical_columns
+                ].values[0, :]
                 ret["static_categorical_values"] = np_to_torch(categorical_values)
 
             if self.metadata_columns:
                 ret["metadata"] = self.data_df[self.metadata_columns].values[
-                    context_start : time_id + self.context_length + self.prediction_length, :
+                    context_start : time_id
+                    + self.context_length
+                    + self.prediction_length,
+                    :,
                 ]
 
             return ret
 
         def __len__(self):
-            return max((len(self.X) - self.context_length - self.prediction_length) // self.stride + 1, 0)
+            return max(
+                (len(self.X) - self.context_length - self.prediction_length)
+                // self.stride
+                + 1,
+                0,
+            )
 
 
 class ImputeForecastDFDataset(BaseConcatDFDataset):
@@ -765,7 +806,9 @@ class ImputeForecastDFDataset(BaseConcatDFDataset):
         frequency_token: Optional[int] = None,
         stride: int = 1,
         fill_value: Union[float, int] = 0.0,
-        masking_specification: Optional[List[Tuple[str, Union[int, Tuple[int, int]]]]] = None,
+        masking_specification: Optional[
+            List[Tuple[str, Union[int, Tuple[int, int]]]]
+        ] = None,
         artificial_missing_rate: float = 0.0,
         artificial_missing_columns: Optional[List[str]] = None,
         artificial_missing_at_time_t: bool = False,
@@ -824,7 +867,9 @@ class ImputeForecastDFDataset(BaseConcatDFDataset):
             frequency_token: Optional[int] = None,
             stride: int = 1,
             fill_value: Union[float, int] = 0.0,
-            masking_specification: Optional[List[Tuple[str, Union[int, Tuple[int, int]]]]] = None,
+            masking_specification: Optional[
+                List[Tuple[str, Union[int, Tuple[int, int]]]]
+            ] = None,
             artificial_missing_rate: float = 0.0,
             artificial_missing_columns: Optional[List[str]] = None,
             artificial_missing_at_time_t: bool = False,
@@ -857,7 +902,9 @@ class ImputeForecastDFDataset(BaseConcatDFDataset):
             y_cols = copy.copy(x_cols)
 
             # masking for conditional values which are not observed during future period
-            self._y_mask_conditional = np.array([(c in conditional_columns) for c in y_cols])
+            self._y_mask_conditional = np.array(
+                [(c in conditional_columns) for c in y_cols]
+            )
 
             self.column_name_to_index_map = {k: v for v, k in enumerate(x_cols)}
 
@@ -880,12 +927,18 @@ class ImputeForecastDFDataset(BaseConcatDFDataset):
             # target columns only
             # we don't mask what is already missing
 
-            self._artificial_missing_column_mask = np.array([(c in self.artificial_missing_columns) for c in x_cols])
-            artificial_observed_mask = np.ones_like(self.X.values[:, self._artificial_missing_column_mask], dtype=bool)
+            self._artificial_missing_column_mask = np.array(
+                [(c in self.artificial_missing_columns) for c in x_cols]
+            )
+            artificial_observed_mask = np.ones_like(
+                self.X.values[:, self._artificial_missing_column_mask], dtype=bool
+            )
 
             if artificial_missing_rate > 0:
                 # obs_x = np.where(~np.isnan(self.X.values[:, self._artificial_missing_mask]))
-                obs_x = np.nonzero(~np.isnan(self.X.values[:, self._artificial_missing_column_mask]))
+                obs_x = np.nonzero(
+                    ~np.isnan(self.X.values[:, self._artificial_missing_column_mask])
+                )
 
                 # process columnwise
                 for col_idx in range(artificial_observed_mask.shape[1]):
@@ -934,18 +987,25 @@ class ImputeForecastDFDataset(BaseConcatDFDataset):
             # mask only on seq_x
             artificial_past_observed_seq = np.ones_like(seq_x, dtype=bool)
             artificial_past_observed_seq[:, self._artificial_missing_column_mask] = (
-                self._artificial_past_observed_mask[time_id : time_id + self.context_length]
+                self._artificial_past_observed_mask[
+                    time_id : time_id + self.context_length
+                ]
             )
 
             # enforce missing at time t
             if self.artificial_missing_at_time_t:
                 # get columns where time t value is observed
                 col_obs = ~np.isnan(seq_x[-1, self._artificial_missing_column_mask])
-                artificial_past_observed_seq[-1, self._artificial_missing_column_mask] = ~col_obs
+                artificial_past_observed_seq[
+                    -1, self._artificial_missing_column_mask
+                ] = ~col_obs
 
             # seq_y: batch_size x pred_len x num_x_cols
             seq_y = self.y[
-                time_id + self.context_length : time_id + self.context_length + self.prediction_length
+                time_id
+                + self.context_length : time_id
+                + self.context_length
+                + self.prediction_length
             ].values.copy()
 
             seq_y[:, self._y_mask_conditional] = 0
@@ -955,7 +1015,9 @@ class ImputeForecastDFDataset(BaseConcatDFDataset):
                 "future_values": np_to_torch(np.nan_to_num(seq_y, nan=self.fill_value)),
                 "past_observed_mask": np_to_torch(~np.isnan(seq_x)),
                 "future_observed_mask": np_to_torch(~np.isnan(seq_y)),
-                "artificial_past_observed_mask": np_to_torch(artificial_past_observed_seq),
+                "artificial_past_observed_mask": np_to_torch(
+                    artificial_past_observed_seq
+                ),
             }
 
             if self.datetime_col:
@@ -968,13 +1030,17 @@ class ImputeForecastDFDataset(BaseConcatDFDataset):
                 ret["freq_token"] = torch.tensor(self.frequency_token, dtype=torch.int)
 
             if self.static_categorical_columns:
-                categorical_values = self.data_df[self.static_categorical_columns].values[0, :]
+                categorical_values = self.data_df[
+                    self.static_categorical_columns
+                ].values[0, :]
                 ret["static_categorical_values"] = np_to_torch(categorical_values)
 
             return ret
 
         def __len__(self):
-            return (len(self.X) - self.context_length - self.prediction_length) // self.stride + 1
+            return (
+                len(self.X) - self.context_length - self.prediction_length
+            ) // self.stride + 1
 
 
 class RegressionDFDataset(BaseConcatDFDataset):
@@ -1089,7 +1155,9 @@ class RegressionDFDataset(BaseConcatDFDataset):
 
             time_id = index * self.stride
             seq_x = self.X.iloc[time_id : time_id + self.context_length].values
-            seq_y = self.y.iloc[time_id + self.context_length - 1 : time_id + self.context_length].values.ravel()
+            seq_y = self.y.iloc[
+                time_id + self.context_length - 1 : time_id + self.context_length
+            ].values.ravel()
             # return _torch(seq_x, seq_y)
 
             ret = {
@@ -1104,7 +1172,9 @@ class RegressionDFDataset(BaseConcatDFDataset):
                 ret["id"] = self.group_id
 
             if self.static_categorical_columns:
-                categorical_values = self.data_df[self.static_categorical_columns].values[0, :]
+                categorical_values = self.data_df[
+                    self.static_categorical_columns
+                ].values[0, :]
                 ret["static_categorical_values"] = np_to_torch(categorical_values)
 
             return ret
@@ -1286,11 +1356,15 @@ def ts_padding(
         ):
             last_timestamp = df.iloc[0][timestamp_column]
             period = df.iloc[1][timestamp_column] - df.iloc[0][timestamp_column]
-            prepended_timestamps = [last_timestamp + offset * period for offset in range(-fill_length, 0)]
+            prepended_timestamps = [
+                last_timestamp + offset * period for offset in range(-fill_length, 0)
+            ]
             pad_df[timestamp_column] = prepended_timestamps
         else:
             pad_df[timestamp_column] = None
-        pad_df[timestamp_column] = pad_df[timestamp_column].astype(df[timestamp_column].dtype)
+        pad_df[timestamp_column] = pad_df[timestamp_column].astype(
+            df[timestamp_column].dtype
+        )
 
     if id_columns:
         id_values = df.iloc[0][id_columns].to_list()
@@ -1447,7 +1521,9 @@ class _WindowedSeriesClassificationDFDataset(BaseDFDataset):
 
         ret = {
             "past_values": np_to_torch(np.nan_to_num(seq_x, nan=self.fill_value)),
-            "target_values": torch.tensor(np.nan_to_num(seq_y, nan=self.fill_value), dtype=torch.int64),
+            "target_values": torch.tensor(
+                np.nan_to_num(seq_y, nan=self.fill_value), dtype=torch.int64
+            ),
             "past_observed_mask": np_to_torch(~np.isnan(seq_x)),
         }
         if self.datetime_col:
@@ -1457,7 +1533,9 @@ class _WindowedSeriesClassificationDFDataset(BaseDFDataset):
             ret["id"] = self.group_id
 
         if self.static_categorical_columns:
-            categorical_values = self.data_df[self.static_categorical_columns].values[0, :]
+            categorical_values = self.data_df[self.static_categorical_columns].values[
+                0, :
+            ]
             ret["static_categorical_values"] = np_to_torch(categorical_values)
 
         return ret
@@ -1554,7 +1632,9 @@ class _FullSeriesClassificationDFDataset(BaseDFDataset):
         ret["id"] = self.group_id + (ind,) if self.group_id else (ind,)
 
         if self.static_categorical_columns:
-            categorical_values = self.data_df[self.static_categorical_columns].iloc[ind].values
+            categorical_values = (
+                self.data_df[self.static_categorical_columns].iloc[ind].values
+            )
             ret["static_categorical_values"] = np_to_torch(categorical_values)
 
         return ret
@@ -1574,4 +1654,6 @@ if __name__ == "__main__":
     d6 = PretrainDFDataset(data_df=df, x_cols=["A", "B"], group_ids=["g1"], seq_len=2)
     print(f"d6: {d6}")
 
-    d7 = ForecastDFDataset(data_df=df, x_cols=["A", "B"], group_ids=["g1"], seq_len=2, pred_len=2)
+    d7 = ForecastDFDataset(
+        data_df=df, x_cols=["A", "B"], group_ids=["g1"], seq_len=2, pred_len=2
+    )

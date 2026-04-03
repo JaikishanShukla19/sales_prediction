@@ -12,7 +12,6 @@ from utils import mask_generate, mse
 from tsfm_public import TimeSeriesPreprocessor, get_datasets
 from tsfm_public.models.tspulse import TSPulseForReconstruction
 
-
 warnings.filterwarnings("ignore")
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -64,7 +63,9 @@ def main(DATASET, mask_type, mask_ratio):
         parse_dates=[timestamp_column],
     )
 
-    target_columns = data.columns.to_list()[1:]  # all the columns from the data except 'date'
+    target_columns = data.columns.to_list()[
+        1:
+    ]  # all the columns from the data except 'date'
 
     column_specifiers = {
         "timestamp_column": timestamp_column,
@@ -87,7 +88,12 @@ def main(DATASET, mask_type, mask_ratio):
     def collate_only_past_values(batch):
         return torch.stack([item["past_values"] for item in batch])
 
-    test_dataloader = DataLoader(dset_test, batch_size=batch_size, shuffle=False, collate_fn=collate_only_past_values)
+    test_dataloader = DataLoader(
+        dset_test,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_only_past_values,
+    )
 
     model = TSPulseForReconstruction.from_pretrained(
         "ibm-granite/granite-timeseries-tspulse-r1",
@@ -120,7 +126,9 @@ def main(DATASET, mask_type, mask_ratio):
         masks = np.concatenate(masks)
 
         MSE = mse(y=trues[masks == 1], y_hat=preds[masks == 1], reduction="mean")
-        print(f"Dataset = {DATASET}  : Mask Type = {mask_type}  : Mask Ratio = {mask_ratio}")
+        print(
+            f"Dataset = {DATASET}  : Mask Type = {mask_type}  : Mask Ratio = {mask_ratio}"
+        )
         print(f"Mean Squarred Error (MSE)={MSE:.3f}")
 
         output_file = "tspulse_zeroshot_imputation_results.csv"

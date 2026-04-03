@@ -11,7 +11,6 @@ from gluonts.model import Forecast
 from gluonts.model.forecast import QuantileForecast
 from tqdm.auto import tqdm
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
@@ -32,7 +31,9 @@ class PatchTSTFMEvalPredictor:
         self.prediction_length = prediction_length
         self.dataset_name = dataset_name
         cur_path = Path(__file__).parent.resolve()
-        self.dataset_properties = pd.read_csv(os.path.join(cur_path, "GIFT_EVAL_META.csv"), index_col="dataset")
+        self.dataset_properties = pd.read_csv(
+            os.path.join(cur_path, "GIFT_EVAL_META.csv"), index_col="dataset"
+        )
         self.freq = self.dataset_properties.loc[self.dataset_name, "freq"]
         self.quantile_levels = quantile_levels
         logging.info(f"{'=' * 10} Dataset Info {'=' * 10}")
@@ -55,7 +56,9 @@ class PatchTSTFMEvalPredictor:
         return target
 
     @torch.no_grad()
-    def predict(self, test_data_input, batch_size=2048, *args, **kwargs) -> List[Forecast]:
+    def predict(
+        self, test_data_input, batch_size=2048, *args, **kwargs
+    ) -> List[Forecast]:
         input_ndim = next(iter(test_data_input))["target"].ndim
         while True:
             try:
@@ -74,12 +77,15 @@ class PatchTSTFMEvalPredictor:
                         quantile_levels=self.quantile_levels,
                     )
                     pred_quantiles = [
-                        (x.squeeze(-1) if input_ndim == 1 else x).cpu().numpy() for x in model_outputs.quantile_outputs
+                        (x.squeeze(-1) if input_ndim == 1 else x).cpu().numpy()
+                        for x in model_outputs.quantile_outputs
                     ]
                     forecast_outputs.extend(pred_quantiles)
                 break
             except torch.cuda.OutOfMemoryError:
-                logging.warning(f"OutOfMemoryError at batch_size {batch_size}, reducing to {batch_size // 2}")
+                logging.warning(
+                    f"OutOfMemoryError at batch_size {batch_size}, reducing to {batch_size // 2}"
+                )
                 batch_size //= 2
 
         forecasts = []

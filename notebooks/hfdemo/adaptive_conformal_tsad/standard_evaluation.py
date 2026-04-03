@@ -87,7 +87,9 @@ def get_scores_eval(scores, label, thresholds=None):
                 np.linspace(0.2, 1, 21),  # High α for broader picture
             ]
         )
-        thresholds = np.sort(np.unique(np.sort(np.concatenate([alpha_p_values, 1 - alpha_p_values]))))
+        thresholds = np.sort(
+            np.unique(np.sort(np.concatenate([alpha_p_values, 1 - alpha_p_values])))
+        )
 
     output["threshold_independent_metrics"] = {
         "AUC_ROC": metrics.roc_auc_score(label, scores),
@@ -118,7 +120,11 @@ def get_scores_eval(scores, label, thresholds=None):
             if metric_value >= best_threshold_metrics[th_metric + "_point"][th_metric]:
                 best_threshold_metrics[th_metric + "_point"][th_metric] = metric_value
                 best_threshold_metrics[th_metric + "_point"]["fpr"] = fpr
-                best_threshold_metrics[th_metric + "_point"]["score_threshold"] = 1 - th_effective
-                best_threshold_metrics[th_metric + "_point"]["threshold"] = 1 - th  # p-value compatible
+                best_threshold_metrics[th_metric + "_point"]["score_threshold"] = (
+                    1 - th_effective
+                )
+                best_threshold_metrics[th_metric + "_point"]["threshold"] = (
+                    1 - th
+                )  # p-value compatible
     output["threshold_dependent_metrics"] = best_threshold_metrics
     return output

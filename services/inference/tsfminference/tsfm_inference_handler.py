@@ -26,7 +26,6 @@ from . import TSFM_ALLOW_LOAD_FROM_HF_HUB
 from .inference_payloads import ForecastingMetadataInput, ForecastingParameters
 from .tsfm_util import load_config, load_model, register_config
 
-
 LOCAL_FILES_ONLY = not TSFM_ALLOW_LOAD_FROM_HF_HUB
 LOGGER = logging.getLogger(__file__)
 
@@ -88,7 +87,9 @@ class TSFMForecastingInferenceHandler:
     def _cached_load_model(cls, model_path, config: str, module_path, config_class):
         with FileLock(_IPROCESS_LOCK_FILE):
             with _THREAD_LOCK:
-                tmp = tempfile.NamedTemporaryFile(mode="w+", suffix=".json", delete=False)
+                tmp = tempfile.NamedTemporaryFile(
+                    mode="w+", suffix=".json", delete=False
+                )
                 try:
                     tmp.write(config)
                     tmp.flush()
@@ -138,7 +139,9 @@ class TSFMForecastingInferenceHandler:
 
         # load preprocessor
         try:
-            preprocessor = TimeSeriesPreprocessor.from_pretrained(self.model_path, local_files_only=LOCAL_FILES_ONLY)
+            preprocessor = TimeSeriesPreprocessor.from_pretrained(
+                self.model_path, local_files_only=LOCAL_FILES_ONLY
+            )
             LOGGER.info("Successfully loaded preprocessor")
         except OSError:
             preprocessor = None
@@ -147,10 +150,14 @@ class TSFMForecastingInferenceHandler:
             raise ex
 
         if self.handler_config.is_finetuned and preprocessor is None:
-            raise ValueError("Model indicates that it is finetuned but no preprocessor was found.")
+            raise ValueError(
+                "Model indicates that it is finetuned but no preprocessor was found."
+            )
 
         if not self.handler_config.is_finetuned and preprocessor is not None:
-            raise ValueError("Unexpected: model indicates that it is not finetuned but a preprocessor was found.")
+            raise ValueError(
+                "Unexpected: model indicates that it is not finetuned but a preprocessor was found."
+            )
 
         if preprocessor is None:
             to_check = [
@@ -196,7 +203,9 @@ class TSFMForecastingInferenceHandler:
                 param_val_saved = getattr(preprocessor, param)
                 param_val = preprocessor_params[param]
                 # if a parameter is passed we check it matches the preprocessor
-                if self.strict_schema_match or not (param_val is None or param_val == [] or param_val == ""):
+                if self.strict_schema_match or not (
+                    param_val is None or param_val == [] or param_val == ""
+                ):
                     if param_val != param_val_saved:
                         raise ValueError(
                             f"Attempted to use a fine-tuned model with a different schema, please confirm you have the correct model_id and schema. Error in parameter {param}: received {param_val} but expected {param_val_saved}."
@@ -204,7 +213,11 @@ class TSFMForecastingInferenceHandler:
                 # then we check that parameters from the saved preprocessor match what is in the data
                 if param in to_check_params:
                     continue
-                p = param_val_saved if isinstance(param_val_saved, list) else [param_val_saved]
+                p = (
+                    param_val_saved
+                    if isinstance(param_val_saved, list)
+                    else [param_val_saved]
+                )
                 if any(c not in data.columns for c in p):
                     raise ValueError(
                         f"Attempted to use a fine-tuned model with data that does not match the saved schema, please confirm you have the correct model_id and appropriate data. Error in parameter {param}: data does not contain a column named {param_val_saved}."
@@ -261,12 +274,16 @@ class TSFMForecastingInferenceHandler:
             )
 
         if not self.preprocessor.exogenous_channel_indices and future_data is not None:
-            raise ValueError("Future data was provided, but the model does not support or require future exogenous.")
+            raise ValueError(
+                "Future data was provided, but the model does not support or require future exogenous."
+            )
 
         # future_data checks
         if future_data is not None:
             if schema.id_columns:
-                data_lengths = future_data.groupby(schema.id_columns)[schema.id_columns].apply(len)
+                data_lengths = future_data.groupby(schema.id_columns)[
+                    schema.id_columns
+                ].apply(len)
                 fd_min_len_index = data_lengths.argmin()
                 fd_min_data_length = data_lengths.iloc[fd_min_len_index]
                 fd_max_data_length = data_lengths.max()
@@ -282,29 +299,35 @@ class TSFMForecastingInferenceHandler:
 
             model_prediction_length = self.config.prediction_length
 
-            prediction_length = prediction_length if prediction_length is not None else model_prediction_length
+            prediction_length = (
+                prediction_length
+                if prediction_length is not None
+                else model_prediction_length
+            )
             if fd_min_data_length < prediction_length:
-                err_str = (
-                    "Future data should have time series of length that is at least the specified prediction length. "
-                )
+                err_str = "Future data should have time series of length that is at least the specified prediction length. "
                 if schema.id_columns:
                     err_str += f"Received {fd_min_data_length} time points for id {data_lengths.index[fd_min_len_index]}, but expected {prediction_length} time points."
                 else:
-                    err_str += (
-                        f"Received {fd_min_data_length} time points, but expected {prediction_length} time points."
-                    )
+                    err_str += f"Received {fd_min_data_length} time points, but expected {prediction_length} time points."
                 raise ValueError(err_str)
 
             # if data exceeds prediction filter length, truncate
             if fd_max_data_length > model_prediction_length:
-                LOGGER.info(f"Truncating future series lengths to {model_prediction_length}")
+                LOGGER.info(
+                    f"Truncating future series lengths to {model_prediction_length}"
+                )
                 future_data = select_by_index(
-                    future_data, id_columns=schema.id_columns, end_index=model_prediction_length
+                    future_data,
+                    id_columns=schema.id_columns,
+                    end_index=model_prediction_length,
                 )
 
             # if provided data is greater than prediction_filter_length, but less than model_prediction_length we extend
             if has_prediction_filter and fd_min_data_length < model_prediction_length:
-                LOGGER.info(f"Extending time series to match model prediction length: {model_prediction_length}")
+                LOGGER.info(
+                    f"Extending time series to match model prediction length: {model_prediction_length}"
+                )
                 future_data = extend_time_series(
                     time_series=future_data,
                     freq=self.preprocessor.freq,
@@ -322,14 +345,22 @@ class TSFMForecastingInferenceHandler:
 
         device = "cpu" if not torch.cuda.is_available() else "cuda"
 
-        extra_pipeline_args = getattr(self.handler_config, "extra_pipeline_arguments", {})
+        extra_pipeline_args = getattr(
+            self.handler_config, "extra_pipeline_arguments", {}
+        )
 
         # if requested, add quantile predictions to our forecast
-        prediction_quantiles = parameters.prediction_quantiles if parameters.prediction_quantiles else None
+        prediction_quantiles = (
+            parameters.prediction_quantiles if parameters.prediction_quantiles else None
+        )
         if prediction_quantiles is None and quantile_calibration_data is not None:
-            raise ValueError("If you provide quantile_calibration_data, you must provide prediction_quantiles")
+            raise ValueError(
+                "If you provide quantile_calibration_data, you must provide prediction_quantiles"
+            )
         if prediction_quantiles is not None and quantile_calibration_data is None:
-            raise ValueError("Providing prediction_quantiles requires that you also provide quantile_calibration_data")
+            raise ValueError(
+                "Providing prediction_quantiles requires that you also provide quantile_calibration_data"
+            )
 
         pp_processor: PostHocProbabilisticProcessor = None
 
@@ -355,7 +386,9 @@ class TSFMForecastingInferenceHandler:
 
             # check that each timeseries satisfies minimum length requirements
             if schema.id_columns:
-                data_lengths = quantile_calibration_data.groupby(schema.id_columns)[schema.id_columns].apply(len)
+                data_lengths = quantile_calibration_data.groupby(schema.id_columns)[
+                    schema.id_columns
+                ].apply(len)
                 min_len_index = data_lengths.argmin()
                 min_data_length = data_lengths.iloc[min_len_index]
                 max_data_length = data_lengths.max()
@@ -385,7 +418,10 @@ class TSFMForecastingInferenceHandler:
             forecasts = forecast_pipeline(quantile_calibration_data)
             prediction_columns = [f"{c}_prediction" for c in schema.target_columns]
             pp_processor = PostHocProbabilisticProcessor(
-                id_columns=schema.id_columns, window_size=100, method="conformal", quantiles=prediction_quantiles
+                id_columns=schema.id_columns,
+                window_size=100,
+                method="conformal",
+                quantiles=prediction_quantiles,
             )
 
             pp_processor = pp_processor.train(
@@ -438,18 +474,32 @@ class TSFMForecastingInferenceHandler:
                 ]
             ]
         )
-        input_ts_columns = input_ts_columns if input_ts_columns != 0 else data.shape[1] - len(schema.id_columns) - 1
+        input_ts_columns = (
+            input_ts_columns
+            if input_ts_columns != 0
+            else data.shape[1] - len(schema.id_columns) - 1
+        )
         input_static_columns = len(schema.static_categorical_columns)
         num_target_columns = (
-            len(schema.target_columns) if schema.target_columns != [] else data.shape[1] - len(schema.id_columns) - 1
+            len(schema.target_columns)
+            if schema.target_columns != []
+            else data.shape[1] - len(schema.id_columns) - 1
         )
-        unique_ts = len(data.drop_duplicates(subset=schema.id_columns)) if schema.id_columns else 1
+        unique_ts = (
+            len(data.drop_duplicates(subset=schema.id_columns))
+            if schema.id_columns
+            else 1
+        )
         has_future_data = future_data is not None
 
         # we don't count the static columns in the future data
         # we only count future data which falls within forecast horizon "causal assumption"
         # note that output_data.shape[0] = unique_ts * prediction_length
-        future_data_points = (input_ts_columns - num_target_columns) * output_data.shape[0] if has_future_data else 0
+        future_data_points = (
+            (input_ts_columns - num_target_columns) * output_data.shape[0]
+            if has_future_data
+            else 0
+        )
 
         counts = {
             "input_data_points": input_ts_columns * data.shape[0]

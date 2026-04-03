@@ -20,9 +20,10 @@ from transformers.trainer_utils import RemoveColumnsCollator
 from tsfm_public.models.tspulse import TSPulseForClassification
 from tsfm_public.toolkit.dataset import ClassificationDFDataset
 from tsfm_public.toolkit.lr_finder import optimal_lr_finder
-from tsfm_public.toolkit.time_series_classification_preprocessor import TimeSeriesClassificationPreprocessor
+from tsfm_public.toolkit.time_series_classification_preprocessor import (
+    TimeSeriesClassificationPreprocessor,
+)
 from tsfm_public.toolkit.util import convert_tsfile_to_dataframe
-
 
 warnings.filterwarnings("ignore")
 
@@ -132,21 +133,27 @@ def main(dataset_name):
             for idx in range(len(dataset)):
                 y.append(dataset[idx]["target_values"])
 
-            for i, (train_indices, val_indices) in enumerate(skf.split(np.zeros(len(y)), y)):
+            for i, (train_indices, val_indices) in enumerate(
+                skf.split(np.zeros(len(y)), y)
+            ):
                 if i == kth_fold:
                     train_dataset = Subset(dataset, train_indices)
                     val_dataset = Subset(dataset, val_indices)
             return train_dataset, val_dataset
 
         skf = StratifiedKFold(n_splits=data_dict["num_folds"], shuffle=True)
-        train_dataset, valid_dataset = k_fold_cv(skf, base_dataset, data_dict["kth_fold"])
+        train_dataset, valid_dataset = k_fold_cv(
+            skf, base_dataset, data_dict["kth_fold"]
+        )
     else:
         dataset_size = len(base_dataset)
         print(dataset_size)
         split_valid_ratio = 0.1
         val_size = int(split_valid_ratio * dataset_size)  # 10% valid split
         train_size = dataset_size - val_size
-        train_dataset, valid_dataset = random_split(base_dataset, [train_size, val_size])
+        train_dataset, valid_dataset = random_split(
+            base_dataset, [train_size, val_size]
+        )
 
     config_dict = clf_params[dataset_name]["MODEL_PARAMS"]
     config_dict["loss"] = "cross_entropy"
@@ -156,7 +163,9 @@ def main(dataset_name):
     config_dict["num_targets"] = df_base["class_vals"].nunique()
 
     model = TSPulseForClassification.from_pretrained(
-        "ibm-granite/granite-timeseries-tspulse-r1", revision="tspulse-block-dualhead-512-p16-r1", **config_dict
+        "ibm-granite/granite-timeseries-tspulse-r1",
+        revision="tspulse-block-dualhead-512-p16-r1",
+        **config_dict,
     )
     model = model.to("cuda").float()
 
@@ -204,7 +213,9 @@ def main(dataset_name):
         save_strategy="epoch",
         logging_strategy="epoch",
         save_total_limit=1,
-        logging_dir=os.path.join(OUT_DIR, "output"),  # Make sure to specify a logging directory
+        logging_dir=os.path.join(
+            OUT_DIR, "output"
+        ),  # Make sure to specify a logging directory
         load_best_model_at_end=True,  # Load the best model when training ends
         metric_for_best_model="eval_loss",  # Metric to monitor for early stopping
         greater_is_better=False,  # For loss
@@ -250,7 +261,9 @@ def main(dataset_name):
         model_name="temp",
     )
 
-    test_dataloader = DataLoader(test_dataset, batch_size=32, shuffle=False, collate_fn=remove_columns_collator)
+    test_dataloader = DataLoader(
+        test_dataset, batch_size=32, shuffle=False, collate_fn=remove_columns_collator
+    )
     target_list = []
     for batch in test_dataloader:
         batch_labels = batch["target_values"].numpy()
@@ -275,7 +288,9 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--datasets", nargs="+", required=True, help="List of UEA dataset names")
+    parser.add_argument(
+        "--datasets", nargs="+", required=True, help="List of UEA dataset names"
+    )
     args = parser.parse_args()
 
     print("Datasets : ", args.datasets)

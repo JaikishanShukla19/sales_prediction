@@ -6,8 +6,12 @@ import tempfile
 import pandas as pd
 import pytest
 
-from tsfm_public.toolkit.util import convert_to_univariate, convert_tsfile, get_split_params, train_test_split
-
+from tsfm_public.toolkit.util import (
+    convert_to_univariate,
+    convert_tsfile,
+    get_split_params,
+    train_test_split,
+)
 
 split_cases = [
     (0, 1, "select_by_index"),
@@ -25,7 +29,9 @@ split_cases = [
 def test_get_split_params(left_arg, right_arg, expected):
     """Test that get_split_params gives the right split function"""
 
-    split_config, split_function = get_split_params({"train": [left_arg, right_arg], "valid": [0, 1], "test": [0, 1]})
+    split_config, split_function = get_split_params(
+        {"train": [left_arg, right_arg], "valid": [0, 1], "test": [0, 1]}
+    )
 
     assert split_function["train"].__name__ == expected
 
@@ -59,7 +65,10 @@ def test_convert_to_univariate(ts_data):
     timestamp_column = "timestamp"
     target_columns = ["value1", "value2"]
     df_uni = convert_to_univariate(
-        ts_data, timestamp_column=timestamp_column, id_columns=id_columns, target_columns=target_columns
+        ts_data,
+        timestamp_column=timestamp_column,
+        id_columns=id_columns,
+        target_columns=target_columns,
     )
 
     assert df_uni.columns.to_list() == [
@@ -74,7 +83,10 @@ def test_convert_to_univariate(ts_data):
 
     with pytest.raises(ValueError):
         df_uni = convert_to_univariate(
-            ts_data, timestamp_column=timestamp_column, id_columns=id_columns, target_columns=target_columns
+            ts_data,
+            timestamp_column=timestamp_column,
+            id_columns=id_columns,
+            target_columns=target_columns,
         )
 
 

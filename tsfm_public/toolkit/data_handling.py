@@ -12,7 +12,6 @@ import yaml
 
 from .time_series_preprocessor import TimeSeriesPreprocessor, get_datasets
 
-
 LOGGER = logging.getLogger(__file__)
 
 
@@ -29,7 +28,9 @@ def load_dataset(
     seed: int = 42,
     **dataset_kwargs,
 ):
-    LOGGER.info(f"Dataset name: {dataset_name}, context length: {context_length}, prediction length {forecast_length}")
+    LOGGER.info(
+        f"Dataset name: {dataset_name}, context length: {context_length}, prediction length {forecast_length}"
+    )
 
     config_path = resources.files("tsfm_public.resources.data_config")
     names_to_config = {p.stem: p for p in config_path.iterdir() if p.suffix == ".yaml"}
@@ -64,7 +65,9 @@ def load_dataset(
 
     # if dataset_path is provided we will ignore the config file
     if dataset_path is None:
-        dataset_path = Path(dataset_root_path) / config["data_path"] / config["data_file"]
+        dataset_path = (
+            Path(dataset_root_path) / config["data_path"] / config["data_file"]
+        )
 
     data = pd.read_csv(
         dataset_path,
@@ -82,6 +85,8 @@ def load_dataset(
         seed=seed,
         **dataset_kwargs,
     )
-    LOGGER.info(f"Data lengths: train = {len(train_dataset)}, val = {len(valid_dataset)}, test = {len(test_dataset)}")
+    LOGGER.info(
+        f"Data lengths: train = {len(train_dataset)}, val = {len(valid_dataset)}, test = {len(test_dataset)}"
+    )
 
     return train_dataset, valid_dataset, test_dataset

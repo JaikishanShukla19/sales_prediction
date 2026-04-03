@@ -32,10 +32,21 @@ class basic_metricor:
         a = max(sequence_original[0][0] - window // 2, 0)
         sequence_new = []
         for i in range(len(sequence_original) - 1):
-            if sequence_original[i][1] + window // 2 < sequence_original[i + 1][0] - window // 2:
+            if (
+                sequence_original[i][1] + window // 2
+                < sequence_original[i + 1][0] - window // 2
+            ):
                 sequence_new.append((a, sequence_original[i][1] + window // 2))
                 a = sequence_original[i + 1][0] - window // 2
-        sequence_new.append((a, min(sequence_original[len(sequence_original) - 1][1] + window // 2, len(label) - 1)))
+        sequence_new.append(
+            (
+                a,
+                min(
+                    sequence_original[len(sequence_original) - 1][1] + window // 2,
+                    len(label) - 1,
+                ),
+            )
+        )
         return sequence_new
 
     def sequencing(self, x, L, window=5):
@@ -94,7 +105,9 @@ class basic_metricor:
                 existence = 0
 
                 for seg in L:
-                    labels[seg[0] : seg[1] + 1] = labels_extended[seg[0] : seg[1] + 1] * pred[seg[0] : seg[1] + 1]
+                    labels[seg[0] : seg[1] + 1] = (
+                        labels_extended[seg[0] : seg[1] + 1] * pred[seg[0] : seg[1] + 1]
+                    )
                     if (pred[seg[0] : (seg[1] + 1)] > 0).any():
                         existence += 1
                 for seg in seq:
@@ -141,7 +154,14 @@ class basic_metricor:
             AP_range = np.dot(width_PR, height_PR)
             ap_3d[window] = AP_range
 
-        return tpr_3d, fpr_3d, prec_3d, window_3d, sum(auc_3d) / len(window_3d), sum(ap_3d) / len(window_3d)
+        return (
+            tpr_3d,
+            fpr_3d,
+            prec_3d,
+            window_3d,
+            sum(auc_3d) / len(window_3d),
+            sum(ap_3d) / len(window_3d),
+        )
 
     def RangeAUC_volume_opt_mem(self, labels_original, score, windowSize, thre=250):
         window_3d = np.arange(0, windowSize + 1, 1)
@@ -181,7 +201,9 @@ class basic_metricor:
                 existence = 0
 
                 for seg in L:
-                    labels[seg[0] : seg[1] + 1] = labels_extended[seg[0] : seg[1] + 1] * p[j][seg[0] : seg[1] + 1]
+                    labels[seg[0] : seg[1] + 1] = (
+                        labels_extended[seg[0] : seg[1] + 1] * p[j][seg[0] : seg[1] + 1]
+                    )
                     if (p[j][seg[0] : (seg[1] + 1)] > 0).any():
                         existence += 1
                 for seg in seq:
@@ -225,16 +247,37 @@ class basic_metricor:
             height_PR = Precision_list[1:]
             AP_range = np.dot(width_PR, height_PR)
             ap_3d[window] = AP_range
-        return tpr_3d, fpr_3d, prec_3d, window_3d, sum(auc_3d) / len(window_3d), sum(ap_3d) / len(window_3d)
+        return (
+            tpr_3d,
+            fpr_3d,
+            prec_3d,
+            window_3d,
+            sum(auc_3d) / len(window_3d),
+            sum(ap_3d) / len(window_3d),
+        )
 
 
 def generate_curve(label, score, slidingWindow, version="opt", thre=250):
     if version == "opt_mem":
-        tpr_3d, fpr_3d, prec_3d, window_3d, avg_auc_3d, avg_ap_3d = basic_metricor().RangeAUC_volume_opt_mem(
+        (
+            tpr_3d,
+            fpr_3d,
+            prec_3d,
+            window_3d,
+            avg_auc_3d,
+            avg_ap_3d,
+        ) = basic_metricor().RangeAUC_volume_opt_mem(
             labels_original=label, score=score, windowSize=slidingWindow, thre=thre
         )
     else:
-        tpr_3d, fpr_3d, prec_3d, window_3d, avg_auc_3d, avg_ap_3d = basic_metricor().RangeAUC_volume_opt(
+        (
+            tpr_3d,
+            fpr_3d,
+            prec_3d,
+            window_3d,
+            avg_auc_3d,
+            avg_ap_3d,
+        ) = basic_metricor().RangeAUC_volume_opt(
             labels_original=label, score=score, windowSize=slidingWindow, thre=thre
         )
 
@@ -252,7 +295,9 @@ def get_metrics(score, labels, slidingWindow=100, pred=None, version="opt", thre
     metrics = {}
 
     # R_AUC_ROC, R_AUC_PR, _, _, _ = grader.RangeAUC(labels=labels, score=score, window=slidingWindow, plot_ROC=True)
-    _, _, _, _, _, _, VUS_ROC, VUS_PR = generate_curve(labels.astype(int), score, slidingWindow, version, thre)
+    _, _, _, _, _, _, VUS_ROC, VUS_PR = generate_curve(
+        labels.astype(int), score, slidingWindow, version, thre
+    )
 
     metrics["VUS-PR"] = VUS_PR
     metrics["VUS-ROC"] = VUS_ROC
@@ -283,7 +328,9 @@ def find_length_rank(data, rank=1):
 
     try:
         # max_local_max = np.argmax([auto_corr[lcm] for lcm in local_max])
-        sorted_local_max = np.argsort([auto_corr[lcm] for lcm in local_max])[::-1]  # Ascending order
+        sorted_local_max = np.argsort([auto_corr[lcm] for lcm in local_max])[
+            ::-1
+        ]  # Ascending order
         max_local_max = sorted_local_max[0]  # Default
         if rank == 1:
             max_local_max = sorted_local_max[0]

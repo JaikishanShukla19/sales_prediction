@@ -14,7 +14,12 @@ def test_granite_r1_models():
     mp = "ibm-granite/granite-timeseries-ttm-r1"
     for cl in [512, 1024]:
         for fl in [96]:
-            model_key = get_model(model_path=mp, context_length=cl, prediction_length=fl, return_model_key=True)
+            model_key = get_model(
+                model_path=mp,
+                context_length=cl,
+                prediction_length=fl,
+                return_model_key=True,
+            )
             assert int(model_key.split("-")[1]) == fl
             assert int(model_key.split("-")[0]) == cl
 
@@ -32,7 +37,9 @@ def test_granite_r1_models():
     mp = "ibm/TTM"
     cl = 512
     fl = 90
-    model_key = get_model(model_path=mp, context_length=cl, prediction_length=fl, return_model_key=True)
+    model_key = get_model(
+        model_path=mp, context_length=cl, prediction_length=fl, return_model_key=True
+    )
     assert int(model_key.split("-")[0]) == cl
     assert int(model_key.split("-")[1]) == 96
 
@@ -55,7 +62,12 @@ def test_research_r2_models():
     mp = "ibm-research/ttm-research-r2"
     for cl in [512, 1024, 1536]:
         for fl in [96, 192, 336, 720]:
-            model_key = get_model(model_path=mp, context_length=cl, prediction_length=fl, return_model_key=True)
+            model_key = get_model(
+                model_path=mp,
+                context_length=cl,
+                prediction_length=fl,
+                return_model_key=True,
+            )
             assert int(model_key.split("-")[1]) == fl
             assert int(model_key.split("-")[0]) == cl
 
@@ -65,7 +77,12 @@ def test_granite_r2_basic_models():
     # 12 high freq models
     for cl in [512, 1024, 1536]:
         for fl in [96, 192, 336, 720]:
-            model_key = get_model(model_path=mp, context_length=cl, prediction_length=fl, return_model_key=True)
+            model_key = get_model(
+                model_path=mp,
+                context_length=cl,
+                prediction_length=fl,
+                return_model_key=True,
+            )
             assert int(model_key.split("-")[1]) == fl
             assert int(model_key.split("-")[0]) == cl
 
@@ -73,7 +90,9 @@ def test_granite_r2_basic_models():
     # 52 - l2 loss
     cl = 52
     fl = 16
-    model_key = get_model(model_path=mp, context_length=cl, prediction_length=fl, return_model_key=True)
+    model_key = get_model(
+        model_path=mp, context_length=cl, prediction_length=fl, return_model_key=True
+    )
     assert int(model_key.split("-")[1]) == fl
     assert int(model_key.split("-")[0]) == cl
 
@@ -81,7 +100,11 @@ def test_granite_r2_basic_models():
     cl = 52
     fl = 16
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_l1_loss=True, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_l1_loss=True,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == fl
     assert int(model_key.split("-")[0]) == cl
@@ -90,7 +113,9 @@ def test_granite_r2_basic_models():
     # 90 - l2 loss
     cl = 90
     fl = 30
-    model_key = get_model(model_path=mp, context_length=cl, prediction_length=fl, return_model_key=True)
+    model_key = get_model(
+        model_path=mp, context_length=cl, prediction_length=fl, return_model_key=True
+    )
     assert int(model_key.split("-")[1]) == fl
     assert int(model_key.split("-")[0]) == cl
 
@@ -98,7 +123,11 @@ def test_granite_r2_basic_models():
     cl = 90
     fl = 30
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_l1_loss=True, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_l1_loss=True,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == fl
     assert int(model_key.split("-")[0]) == cl
@@ -108,7 +137,11 @@ def test_granite_r2_basic_models():
     cl = 180
     fl = 60
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_l1_loss=True, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_l1_loss=True,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == fl
     assert int(model_key.split("-")[0]) == cl
@@ -118,7 +151,11 @@ def test_granite_r2_basic_models():
     cl = 360
     fl = 60
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_l1_loss=True, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_l1_loss=True,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == fl
     assert int(model_key.split("-")[0]) == cl
@@ -128,7 +165,11 @@ def test_granite_r2_basic_models():
     cl = 512
     fl = 48
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_l1_loss=False, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_l1_loss=False,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == fl
     assert int(model_key.split("-")[0]) == cl
@@ -137,7 +178,11 @@ def test_granite_r2_basic_models():
     cl = 512
     fl = 48
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_l1_loss=True, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_l1_loss=True,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == fl
     assert int(model_key.split("-")[0]) == cl
@@ -210,7 +255,11 @@ def test_prefer_longer_context():
     cl = 100
     fl = 20
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_longer_context=True, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_longer_context=True,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == 30
     assert int(model_key.split("-")[0]) == 90
@@ -219,7 +268,11 @@ def test_prefer_longer_context():
     cl = 100
     fl = 20
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_longer_context=False, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_longer_context=False,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == 30
     assert int(model_key.split("-")[0]) == 90
@@ -228,7 +281,11 @@ def test_prefer_longer_context():
     cl = 100
     fl = 10
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_longer_context=False, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_longer_context=False,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == 16
     assert int(model_key.split("-")[0]) == 52
@@ -237,7 +294,11 @@ def test_prefer_longer_context():
     cl = 100
     fl = 10
     model_key = get_model(
-        model_path=mp, context_length=cl, prediction_length=fl, prefer_longer_context=True, return_model_key=True
+        model_path=mp,
+        context_length=cl,
+        prediction_length=fl,
+        prefer_longer_context=True,
+        return_model_key=True,
     )
     assert int(model_key.split("-")[1]) == 30
     assert int(model_key.split("-")[0]) == 90
@@ -377,8 +438,26 @@ test_cases_granite_r2 = [
     (36, 12, "M", False, False, True, "random_init_small", "TTM(small)"),
     (512, 96, "oov", False, False, True, None, "512-96-r2"),
     (512, 96, "5min", False, False, True, None, "512-96-r2"),
-    (512, 96, "random", False, False, True, None, "512-96-r2"),  # Invalid freq, but ft=False
-    (512, 96, "random", True, False, True, "random_init_medium", "TTM(medium)"),  # Invalid freq, but ft=True
+    (
+        512,
+        96,
+        "random",
+        False,
+        False,
+        True,
+        None,
+        "512-96-r2",
+    ),  # Invalid freq, but ft=False
+    (
+        512,
+        96,
+        "random",
+        True,
+        False,
+        True,
+        "random_init_medium",
+        "TTM(medium)",
+    ),  # Invalid freq, but ft=True
     (20, 6, "W", True, True, False, "zeropad", "52-16-ft-l1-r2.1"),
     (200, 24, "W", True, False, True, "zeropad", "180-60-ft-l1-r2.1"),
     (200, 24, "W", True, False, False, "zeropad", "90-30-ft-r2.1"),
@@ -414,7 +493,9 @@ test_cases_granite_r2 = [
 ]
 
 
-@pytest.mark.parametrize("cl, fl, res, ft, l1, longer, force_return, expected", test_cases_granite_r2)
+@pytest.mark.parametrize(
+    "cl, fl, res, ft, l1, longer, force_return, expected", test_cases_granite_r2
+)
 def test_all_cases_granite_r2(cl, fl, res, ft, l1, longer, force_return, expected):
     model_key = get_model(
         "ibm-granite/granite-timeseries-ttm-r2",
@@ -446,7 +527,9 @@ test_cases_granite_r1 = [
 ]
 
 
-@pytest.mark.parametrize("cl, fl, res, ft, l1, longer, force_return, expected", test_cases_granite_r1)
+@pytest.mark.parametrize(
+    "cl, fl, res, ft, l1, longer, force_return, expected", test_cases_granite_r1
+)
 def test_all_cases_granite_r1(cl, fl, res, ft, l1, longer, force_return, expected):
     model_key = get_model(
         "ibm-granite/granite-timeseries-ttm-r1",
@@ -477,7 +560,9 @@ test_cases_research_r2 = [
 ]
 
 
-@pytest.mark.parametrize("cl, fl, res, ft, l1, longer, force_return, expected", test_cases_research_r2)
+@pytest.mark.parametrize(
+    "cl, fl, res, ft, l1, longer, force_return, expected", test_cases_research_r2
+)
 def test_all_cases_research_r2(cl, fl, res, ft, l1, longer, force_return, expected):
     model_key = get_model(
         "ibm-research/ttm-research-r2",

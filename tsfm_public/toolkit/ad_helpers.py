@@ -11,7 +11,6 @@ import pandas as pd
 import torch
 from transformers.utils.generic import ModelOutput
 
-
 ScoreType = Union[np.ndarray, torch.Tensor]
 ScoreListType = Union[ScoreType, List[ScoreType]]
 

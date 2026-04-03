@@ -26,9 +26,13 @@ def retrieve(device, batch_size, k, train_dataset, test_dataset, model):
     for batch_idx, batch in enumerate(tqdm(dataloader)):
         embs = get_embeddings(model, batch["past_values"].to(device))
         B, C, D = embs.shape
-        metadata.extend([(batch_idx * batch_size + b, c) for b in range(B) for c in range(C)])
+        metadata.extend(
+            [(batch_idx * batch_size + b, c) for b in range(B) for c in range(C)]
+        )
         train_embeddings.append(embs.cpu().numpy())
-    train_embeddings = np.concatenate(train_embeddings).squeeze(axis=1)  # due to univariate
+    train_embeddings = np.concatenate(train_embeddings).squeeze(
+        axis=1
+    )  # due to univariate
 
     # create index set of embeddings from training data
     d = train_embeddings.shape[1]
@@ -43,7 +47,9 @@ def retrieve(device, batch_size, k, train_dataset, test_dataset, model):
     D_all, I_all = [], []
     for batch_idx, batch in enumerate(tqdm(dataloader)):
         test_embedding = get_embeddings(model, batch["past_values"].to(device))
-        query_vector = test_embedding.squeeze(dim=1).cpu()  # due to univariate, [B, 1, D] -> [B, D]
+        query_vector = test_embedding.squeeze(
+            dim=1
+        ).cpu()  # due to univariate, [B, 1, D] -> [B, D]
         D, I = index.search(query_vector, k=k)
         D_all.extend(D)
         I_all.extend(I)
@@ -51,7 +57,9 @@ def retrieve(device, batch_size, k, train_dataset, test_dataset, model):
     return D_all, I_all, metadata
 
 
-def compute_ranking_score(device, batch_size, k, I_all, train_dataset, test_dataset, level):
+def compute_ranking_score(
+    device, batch_size, k, I_all, train_dataset, test_dataset, level
+):
     def _precision_k(cmp, k):
         cmp_k = np.sum(cmp[:, :k], axis=1) / k
         mean_cmp_k = np.mean(cmp_k)
@@ -87,7 +95,9 @@ def compute_ranking_score(device, batch_size, k, I_all, train_dataset, test_data
     def _mrr(cmp, k):
         cmp_k = cmp[:, :k]
         first_index = np.argmax(cmp_k, axis=1, keepdims=True)
-        first_value = np.take_along_axis(cmp_k, first_index, axis=1)  # false if there is no correct item
+        first_value = np.take_along_axis(
+            cmp_k, first_index, axis=1
+        )  # false if there is no correct item
         rr = 1 / (first_index + 1)
         return np.mean(rr * first_value)
 
@@ -114,7 +124,9 @@ def compute_ranking_score(device, batch_size, k, I_all, train_dataset, test_data
 
 
 def evaluate(device, seed, batch_size, k, model, train_dataset, test_dataset):
-    D_all, I_all, metadata = retrieve(device, batch_size, k, train_dataset, test_dataset, model)
+    D_all, I_all, metadata = retrieve(
+        device, batch_size, k, train_dataset, test_dataset, model
+    )
     df = []
     for level in ["family_match", "finegrained_match"]:
         prec_k, avg_prec_k, ndcg_k, mrr_k = compute_ranking_score(
@@ -152,7 +164,9 @@ def main(seed, batch_size, k, dataset):
         raise RuntimeError(f"{dataset} is not found")
 
     batch_size = min([batch_size, len(train_dataset)])
-    test_dataset = TransformedSyntheticTestDataset(train_dataset, max_shift=0.2, max_scale=0.2, noise_ratio=0.1)
+    test_dataset = TransformedSyntheticTestDataset(
+        train_dataset, max_shift=0.2, max_scale=0.2, noise_ratio=0.1
+    )
 
     model = TSPulseForReconstruction.from_pretrained(
         "ibm-granite/granite-timeseries-tspulse-r1",
@@ -162,7 +176,9 @@ def main(seed, batch_size, k, dataset):
     )
     model.eval().to(device)
 
-    df_result = evaluate(device, seed, batch_size, k, model, train_dataset, test_dataset)
+    df_result = evaluate(
+        device, seed, batch_size, k, model, train_dataset, test_dataset
+    )
     return df_result
 
 

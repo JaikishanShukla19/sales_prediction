@@ -1,4 +1,5 @@
 """A configuration class for service handlers"""
+
 # Adapted from https://github.com/huggingface/transformers/blob/main/src/transformers/configuration_utils.py
 
 import copy
@@ -9,7 +10,6 @@ import warnings
 from typing import Any, Dict, Optional, Tuple, Union
 
 from transformers.utils import PushToHubMixin, cached_file, download_url, is_remote_url
-
 
 TSFM_CONFIG_NAME = "tsfm_config.json"
 
@@ -51,8 +51,12 @@ class TSFMConfig(PushToHubMixin):
 
     def __init__(self, **kwargs):
         # Attributes with defaults
-        self.inference_handler_module_path = kwargs.pop("inference_handler_module_path", None)
-        self.inference_handler_class_name = kwargs.pop("inference_handler_class_name", None)
+        self.inference_handler_module_path = kwargs.pop(
+            "inference_handler_module_path", None
+        )
+        self.inference_handler_class_name = kwargs.pop(
+            "inference_handler_class_name", None
+        )
         self.tuning_handler_module_path = kwargs.pop("tuning_handler_module_path", None)
         self.tuning_handler_class_name = kwargs.pop("tuning_handler_class_name", None)
         self.module_path = kwargs.pop("module_path", None)
@@ -95,7 +99,9 @@ class TSFMConfig(PushToHubMixin):
 
     @name_or_path.setter
     def name_or_path(self, value):
-        self._name_or_path = str(value)  # Make sure that name_or_path is a string (for JSON encoding)
+        self._name_or_path = str(
+            value
+        )  # Make sure that name_or_path is a string (for JSON encoding)
 
     @staticmethod
     def _set_token_in_kwargs(kwargs, token=None):
@@ -124,7 +130,12 @@ class TSFMConfig(PushToHubMixin):
         if token is not None:
             kwargs["token"] = token
 
-    def save_pretrained(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
+    def save_pretrained(
+        self,
+        save_directory: Union[str, os.PathLike],
+        push_to_hub: bool = False,
+        **kwargs,
+    ):
         """
         Save a configuration object to the directory `save_directory`, so that it can be re-loaded using the
         [`~PretrainedConfig.from_pretrained`] class method.
@@ -142,7 +153,9 @@ class TSFMConfig(PushToHubMixin):
         self._set_token_in_kwargs(kwargs)
 
         if os.path.isfile(save_directory):
-            raise AssertionError(f"Provided path ({save_directory}) should be a directory, not a file")
+            raise AssertionError(
+                f"Provided path ({save_directory}) should be a directory, not a file"
+            )
 
         os.makedirs(save_directory, exist_ok=True)
 
@@ -172,7 +185,9 @@ class TSFMConfig(PushToHubMixin):
                 token=kwargs.get("token"),
             )
 
-    def to_json_file(self, json_file_path: Union[str, os.PathLike], use_diff: bool = True):
+    def to_json_file(
+        self, json_file_path: Union[str, os.PathLike], use_diff: bool = True
+    ):
         """
         Save this instance to a JSON file.
 
@@ -279,7 +294,9 @@ class TSFMConfig(PushToHubMixin):
 
         cls._set_token_in_kwargs(kwargs, token)
 
-        config_dict, kwargs = cls.get_config_dict(pretrained_model_name_or_path, **kwargs)
+        config_dict, kwargs = cls.get_config_dict(
+            pretrained_model_name_or_path, **kwargs
+        )
 
         return cls.from_dict(config_dict, **kwargs)
 
@@ -302,7 +319,9 @@ class TSFMConfig(PushToHubMixin):
         cls._set_token_in_kwargs(kwargs)
 
         # Get config dict associated with the base config file
-        config_dict, kwargs = cls._get_config_dict(pretrained_model_name_or_path, **kwargs)
+        config_dict, kwargs = cls._get_config_dict(
+            pretrained_model_name_or_path, **kwargs
+        )
         if config_dict is None:
             return {}, kwargs
 
@@ -388,7 +407,9 @@ class TSFMConfig(PushToHubMixin):
         if is_local:
             LOGGER.info(f"loading configuration file {resolved_config_file}")
         else:
-            LOGGER.info(f"loading configuration file {configuration_file} from cache at {resolved_config_file}")
+            LOGGER.info(
+                f"loading configuration file {configuration_file} from cache at {resolved_config_file}"
+            )
 
         return config_dict, kwargs
 

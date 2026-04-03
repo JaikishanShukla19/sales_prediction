@@ -13,7 +13,6 @@ import torch
 from sklearn.preprocessing import MinMaxScaler
 from utility.metrics import find_length_rank, get_metrics
 
-
 # seeding
 seed = 2024
 torch.manual_seed(seed)
@@ -109,7 +108,11 @@ def process_file(filename, args):
 
         output = run_tsad_pipeline(data, args.model, **extra_kwargs)
         if isinstance(output, np.ndarray):
-            output = MinMaxScaler(feature_range=(0, 1)).fit_transform(output.reshape(-1, 1)).ravel()
+            output = (
+                MinMaxScaler(feature_range=(0, 1))
+                .fit_transform(output.reshape(-1, 1))
+                .ravel()
+            )
 
             evaluation_result = get_metrics(
                 output,
@@ -176,7 +179,10 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "--out_file", type=str, default="TSB_results.csv", help="output file where the results will be stored."
+        "--out_file",
+        type=str,
+        default="TSB_results.csv",
+        help="output file where the results will be stored.",
     )
     parser.add_argument(
         "--dataset",
@@ -185,29 +191,60 @@ if __name__ == "__main__":
         default="#",
         help="optional file selector parameter, if specified runs experiment only on the files containing the string.",
     )
-    parser.add_argument("--batch_size", type=int, default=128, help="batch size used by the TSAD pipeline.")
-
     parser.add_argument(
-        "--score_window", type=int, default=96, help="optional parameter to specify the scoring window size."
+        "--batch_size",
+        type=int,
+        default=128,
+        help="batch size used by the TSAD pipeline.",
     )
 
     parser.add_argument(
-        "--mode", type=str, default="forecast+fft+time", help="running mode for the TSPulse AD pipeline."
+        "--score_window",
+        type=int,
+        default=96,
+        help="optional parameter to specify the scoring window size.",
     )
-
-    parser.add_argument("--smooth", type=int, default=8, required=False, help="score smoothing window specification.")
 
     parser.add_argument(
-        "--finetune", action="store_true", help="if provided model will be finetuned before inference!"
+        "--mode",
+        type=str,
+        default="forecast+fft+time",
+        help="running mode for the TSPulse AD pipeline.",
     )
-
-    parser.add_argument("--epochs", type=int, default=20, required=False, help="Maximum number of epochs to run!")
 
     parser.add_argument(
-        "--decoder", type=str, default="common_channel", required=False, help="decoder mode for the TSPulse model"
+        "--smooth",
+        type=int,
+        default=8,
+        required=False,
+        help="score smoothing window specification.",
     )
 
-    parser.add_argument("--freeze_bb", action="store_true", help="freeze the backbone during finetuning")
+    parser.add_argument(
+        "--finetune",
+        action="store_true",
+        help="if provided model will be finetuned before inference!",
+    )
+
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=20,
+        required=False,
+        help="Maximum number of epochs to run!",
+    )
+
+    parser.add_argument(
+        "--decoder",
+        type=str,
+        default="common_channel",
+        required=False,
+        help="decoder mode for the TSPulse model",
+    )
+
+    parser.add_argument(
+        "--freeze_bb", action="store_true", help="freeze the backbone during finetuning"
+    )
 
     parser.add_argument(
         "--seed",
@@ -221,11 +258,19 @@ if __name__ == "__main__":
 
     file_filter = args.dataset if args.dataset != "#" else ".csv"
     if not os.path.isfile(args.eval_file):
-        all_files = [filename for filename in os.listdir(args.data_direc) if file_filter in filename]
+        all_files = [
+            filename
+            for filename in os.listdir(args.data_direc)
+            if file_filter in filename
+        ]
     else:
         all_files = []
         with open(args.eval_file, "r") as fp:
-            all_files = [filename.strip() for filename in fp.readlines() if file_filter in filename.strip()]
+            all_files = [
+                filename.strip()
+                for filename in fp.readlines()
+                if file_filter in filename.strip()
+            ]
     all_results = parallel_process_files(all_files, args)
     df = pd.DataFrame(all_results).set_index("file")
     df.to_csv(args.out_file, float_format="%.5f", header=True)

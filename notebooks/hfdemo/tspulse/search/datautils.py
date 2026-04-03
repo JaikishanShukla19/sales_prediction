@@ -38,7 +38,9 @@ class TransformedSyntheticTestDataset(Dataset):
                     shifted = base_pattern
 
                 if max_scale > 0:
-                    scale = np.random.uniform(1.0 - max_scale, 1.0 + max_scale)  # -30% or + 30% when max_scale=0.3
+                    scale = np.random.uniform(
+                        1.0 - max_scale, 1.0 + max_scale
+                    )  # -30% or + 30% when max_scale=0.3
                     scaled = shifted * scale
                 else:
                     scaled = shifted
@@ -140,7 +142,9 @@ class SyntheticCombDataset(Dataset):
 
     def _augmentation(self, base_pattern, max_scale=0.01, noise_ratio=0.01):
         if max_scale > 0:
-            scale = np.random.uniform(1.0 - max_scale, 1.0 + max_scale)  # -30% or + 30% when max_scale=0.3
+            scale = np.random.uniform(
+                1.0 - max_scale, 1.0 + max_scale
+            )  # -30% or + 30% when max_scale=0.3
             scaled = base_pattern * scale
         else:
             scaled = base_pattern
@@ -213,8 +217,12 @@ class RetrievedData(Dataset):
         self.I_all = I_all
         self.level_label = level
         self.label_encoder = LabelEncoder()
-        self.encoded_train = self.label_encoder.fit_transform([sample[self.level_label] for sample in train_dataset])
-        self.encoded_test = self.label_encoder.transform([sample[self.level_label] for sample in test_dataset])
+        self.encoded_train = self.label_encoder.fit_transform(
+            [sample[self.level_label] for sample in train_dataset]
+        )
+        self.encoded_test = self.label_encoder.transform(
+            [sample[self.level_label] for sample in test_dataset]
+        )
 
     def __len__(self):
         return len(self.test_dataset)

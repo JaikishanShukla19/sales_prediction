@@ -68,7 +68,9 @@ def select_by_timestamp(
     """
 
     if not start_timestamp and not end_timestamp:
-        raise ValueError("At least one of start_timestamp or end_timestamp must be specified.")
+        raise ValueError(
+            "At least one of start_timestamp or end_timestamp must be specified."
+        )
 
     if not start_timestamp:
         return df[df[timestamp_column] < end_timestamp]
@@ -76,7 +78,10 @@ def select_by_timestamp(
     if not end_timestamp:
         return df[df[timestamp_column] >= start_timestamp]
 
-    return df[(df[timestamp_column] >= start_timestamp) & (df[timestamp_column] < end_timestamp)]
+    return df[
+        (df[timestamp_column] >= start_timestamp)
+        & (df[timestamp_column] < end_timestamp)
+    ]
 
 
 def select_by_index(
@@ -109,12 +114,18 @@ def select_by_index(
         raise ValueError("At least one of start_index or end_index must be specified.")
 
     if not id_columns:
-        return _split_group_by_index(df, start_index=start_index, end_index=end_index).copy()
+        return _split_group_by_index(
+            df, start_index=start_index, end_index=end_index
+        ).copy()
 
     groups = df.groupby(_get_groupby_columns(id_columns))
     result = []
     for name, group in groups:
-        result.append(_split_group_by_index(group, name=name, start_index=start_index, end_index=end_index))
+        result.append(
+            _split_group_by_index(
+                group, name=name, start_index=start_index, end_index=end_index
+            )
+        )
 
     return pd.concat(result)
 
@@ -151,7 +162,9 @@ def select_by_relative_fraction(
         pd.DataFrame: Subset of the dataframe.
     """
     if not start_fraction and not end_fraction:
-        raise ValueError("At least one of start_fraction or end_fraction must be specified.")
+        raise ValueError(
+            "At least one of start_fraction or end_fraction must be specified."
+        )
 
     if start_offset < 0:
         raise ValueError("The value of start_offset should ne non-negative.")
@@ -241,7 +254,9 @@ def train_test_split(
         return tuple(
             [
                 tmp.copy()
-                for tmp in _split_group_train_test(df, train=train, test=test, valid_test_offset=valid_test_offset)
+                for tmp in _split_group_train_test(
+                    df, train=train, test=test, valid_test_offset=valid_test_offset
+                )
             ]
         )
 
@@ -276,7 +291,9 @@ def _split_group_train_test(
 
     valid_size = l - train_size - test_size
 
-    train_df = _split_group_by_index(group_df, name, start_index=0, end_index=train_size)
+    train_df = _split_group_by_index(
+        group_df, name, start_index=0, end_index=train_size
+    )
 
     valid_df = _split_group_by_index(
         group_df,
@@ -285,7 +302,9 @@ def _split_group_train_test(
         end_index=train_size + valid_size,
     )
 
-    test_df = _split_group_by_index(group_df, name, start_index=train_size + valid_size - valid_test_offset)
+    test_df = _split_group_by_index(
+        group_df, name, start_index=train_size + valid_size - valid_test_offset
+    )
 
     return train_df, valid_df, test_df
 
@@ -349,7 +368,9 @@ def _split_group_by_fraction(
     else:
         end_index = None
 
-    return _split_group_by_index(group_df=group_df, name=name, start_index=start_index, end_index=end_index)
+    return _split_group_by_index(
+        group_df=group_df, name=name, start_index=start_index, end_index=end_index
+    )
 
 
 def _split_group_by_fixed_fraction(
@@ -374,7 +395,9 @@ def _split_group_by_fixed_fraction(
             f"`location` should be either `{FractionLocation.FIRST.value}` or `{FractionLocation.LAST.value}`"
         )
 
-    return _split_group_by_index(group_df=group_df, name=name, start_index=start_index, end_index=end_index)
+    return _split_group_by_index(
+        group_df=group_df, name=name, start_index=start_index, end_index=end_index
+    )
 
 
 def convert_tsf_to_dataframe(
@@ -416,13 +439,17 @@ def convert_tsf_to_dataframe(
                     if not line.startswith("@data"):
                         line_content = line.split(" ")
                         if line.startswith("@attribute"):
-                            if len(line_content) != 3:  # Attributes have both name and type
+                            if (
+                                len(line_content) != 3
+                            ):  # Attributes have both name and type
                                 raise Exception("Invalid meta-data specification.")
 
                             col_names.append(line_content[1])
                             col_types.append(line_content[2])
                         else:
-                            if len(line_content) != 2:  # Other meta-data have only values
+                            if (
+                                len(line_content) != 2
+                            ):  # Other meta-data have only values
                                 raise Exception("Invalid meta-data specification.")
 
                             if line.startswith("@frequency"):
@@ -430,18 +457,24 @@ def convert_tsf_to_dataframe(
                             elif line.startswith("@horizon"):
                                 forecast_horizon = int(line_content[1])
                             elif line.startswith("@missing"):
-                                contain_missing_values = bool(strtobool(line_content[1]))
+                                contain_missing_values = bool(
+                                    strtobool(line_content[1])
+                                )
                             elif line.startswith("@equallength"):
                                 contain_equal_length = bool(strtobool(line_content[1]))
 
                     else:
                         if len(col_names) == 0:
-                            raise Exception("Missing attribute section. Attribute section must come before data.")
+                            raise Exception(
+                                "Missing attribute section. Attribute section must come before data."
+                            )
 
                         found_data_tag = True
                 elif not line.startswith("#"):
                     if len(col_names) == 0:
-                        raise Exception("Missing attribute section. Attribute section must come before data.")
+                        raise Exception(
+                            "Missing attribute section. Attribute section must come before data."
+                        )
                     elif not found_data_tag:
                         raise Exception("Missing @data tag.")
                     else:
@@ -474,7 +507,9 @@ def convert_tsf_to_dataframe(
                             else:
                                 numeric_series.append(float(val))
 
-                        if numeric_series.count(replace_missing_vals_with) == len(numeric_series):
+                        if numeric_series.count(replace_missing_vals_with) == len(
+                            numeric_series
+                        ):
                             raise Exception(
                                 "All series values are missing. A given series should contains a set of comma separated numeric values. At least one numeric value should be there in a series."
                             )
@@ -488,7 +523,9 @@ def convert_tsf_to_dataframe(
                             elif col_types[i] == "string":
                                 att_val = str(full_info[i])
                             elif col_types[i] == "date":
-                                att_val = datetime.strptime(full_info[i], "%Y-%m-%d %H-%M-%S")
+                                att_val = datetime.strptime(
+                                    full_info[i], "%Y-%m-%d %H-%M-%S"
+                                )
                             else:
                                 raise Exception(
                                     "Invalid attribute type."
@@ -601,7 +638,9 @@ def convert_tsfile_to_dataframe(
                     tokens = line.split(" ")
                     token_len = len(tokens)
                     if token_len != 2:
-                        raise IOError("timestamps tag requires an associated Boolean value")
+                        raise IOError(
+                            "timestamps tag requires an associated Boolean value"
+                        )
                     elif tokens[1] == "true":
                         timestamps = True
                     elif tokens[1] == "false":
@@ -618,7 +657,9 @@ def convert_tsfile_to_dataframe(
                     tokens = line.split(" ")
                     token_len = len(tokens)
                     if token_len != 2:
-                        raise IOError("univariate tag requires an associated Boolean  value")
+                        raise IOError(
+                            "univariate tag requires an associated Boolean  value"
+                        )
                     elif tokens[1] == "true":
                         # univariate = True
                         pass
@@ -637,7 +678,9 @@ def convert_tsfile_to_dataframe(
                     tokens = line.split(" ")
                     token_len = len(tokens)
                     if token_len == 1:
-                        raise IOError("classlabel tag requires an associated Boolean  value")
+                        raise IOError(
+                            "classlabel tag requires an associated Boolean  value"
+                        )
                     if tokens[1] == "true":
                         class_labels = True
                     elif tokens[1] == "false":
@@ -646,7 +689,9 @@ def convert_tsfile_to_dataframe(
                         raise IOError("invalid classLabel value")
                     # Check if we have any associated class values
                     if token_len == 2 and class_labels:
-                        raise IOError("if the classlabel tag is true then class values must be supplied")
+                        raise IOError(
+                            "if the classlabel tag is true then class values must be supplied"
+                        )
                     has_class_labels_tag = True
                     class_label_list = [token.strip() for token in tokens[2:]]
                     metadata_started = True
@@ -657,7 +702,9 @@ def convert_tsfile_to_dataframe(
                     tokens = line.split(" ")
                     token_len = len(tokens)
                     if token_len == 1:
-                        raise IOError("targetlabel tag requires an associated Boolean value")
+                        raise IOError(
+                            "targetlabel tag requires an associated Boolean value"
+                        )
                     if tokens[1] == "true":
                         class_labels = True
                     elif tokens[1] == "false":
@@ -693,7 +740,9 @@ def convert_tsfile_to_dataframe(
                         or not has_class_labels_tag
                         or not has_data_tag
                     ):
-                        raise IOError("a full set of metadata has not been provided before the data")
+                        raise IOError(
+                            "a full set of metadata has not been provided before the data"
+                        )
                     # Replace any missing values with the value specified
                     line = line.replace("?", replace_missing_vals_with)
                     # Check if we are dealing with data that has timestamps
@@ -719,7 +768,9 @@ def convert_tsfile_to_dataframe(
                                 if line[char_num] == ":":
                                     if len(instance_list) < (this_line_num_dim + 1):
                                         instance_list.append([])
-                                    instance_list[this_line_num_dim].append(pd.Series(dtype="object"))
+                                    instance_list[this_line_num_dim].append(
+                                        pd.Series(dtype="object")
+                                    )
                                     this_line_num_dim += 1
                                     has_another_value = False
                                     has_another_dimension = True
@@ -763,10 +814,16 @@ def convert_tsfile_to_dataframe(
                                             )
                                         char_num += 1
                                         tuple_data = ""
-                                        while char_num < line_len and line[char_num] != ")":
+                                        while (
+                                            char_num < line_len
+                                            and line[char_num] != ")"
+                                        ):
                                             tuple_data += line[char_num]
                                             char_num += 1
-                                        if char_num >= line_len or line[char_num] != ")":
+                                        if (
+                                            char_num >= line_len
+                                            or line[char_num] != ")"
+                                        ):
                                             raise IOError(
                                                 "dimension "
                                                 + str(this_line_num_dim + 1)
@@ -780,7 +837,9 @@ def convert_tsfile_to_dataframe(
                                         # Read in any spaces immediately
                                         # after the current tuple
                                         char_num += 1
-                                        while char_num < line_len and str.isspace(line[char_num]):
+                                        while char_num < line_len and str.isspace(
+                                            line[char_num]
+                                        ):
                                             char_num += 1
 
                                         # Check if there is another value or
@@ -840,14 +899,19 @@ def convert_tsfile_to_dataframe(
                                         # Make sure that the timestamps in
                                         # the file (not just this dimension
                                         # or case) are consistent
-                                        if not timestamp_is_timestamp and not timestamp_is_int:
+                                        if (
+                                            not timestamp_is_timestamp
+                                            and not timestamp_is_int
+                                        ):
                                             raise IOError(
                                                 "dimension "
                                                 + str(this_line_num_dim + 1)
                                                 + " on line "
                                                 + str(line_num + 1)
                                                 + " contains a tuple that "
-                                                "has an invalid timestamp '" + timestamp + "'"
+                                                "has an invalid timestamp '"
+                                                + timestamp
+                                                + "'"
                                             )
                                         if (
                                             previous_timestamp_was_int is not None
@@ -883,21 +947,31 @@ def convert_tsfile_to_dataframe(
                                         #  If this was our first tuple then
                                         #  we store the type of timestamp we
                                         #  had
-                                        if prev_timestamp_was_timestamp is None and timestamp_is_timestamp:
+                                        if (
+                                            prev_timestamp_was_timestamp is None
+                                            and timestamp_is_timestamp
+                                        ):
                                             prev_timestamp_was_timestamp = True
                                             previous_timestamp_was_int = False
 
-                                        if previous_timestamp_was_int is None and timestamp_is_int:
+                                        if (
+                                            previous_timestamp_was_int is None
+                                            and timestamp_is_int
+                                        ):
                                             prev_timestamp_was_timestamp = False
                                             previous_timestamp_was_int = True
                                         # See if we should add the data for
                                         # this dimension
                                         if not has_another_value:
-                                            if len(instance_list) < (this_line_num_dim + 1):
+                                            if len(instance_list) < (
+                                                this_line_num_dim + 1
+                                            ):
                                                 instance_list.append([])
 
                                             if timestamp_is_timestamp:
-                                                timestamp_for_dim = pd.DatetimeIndex(timestamp_for_dim)
+                                                timestamp_for_dim = pd.DatetimeIndex(
+                                                    timestamp_for_dim
+                                                )
 
                                             instance_list[this_line_num_dim].append(
                                                 pd.Series(
@@ -911,21 +985,27 @@ def convert_tsfile_to_dataframe(
                             elif has_another_value:
                                 raise IOError(
                                     "dimension " + str(this_line_num_dim + 1) + " on "
-                                    "line " + str(line_num + 1) + " ends with a ',' that "
+                                    "line "
+                                    + str(line_num + 1)
+                                    + " ends with a ',' that "
                                     "is not followed by "
                                     "another tuple"
                                 )
                             elif has_another_dimension and class_labels:
                                 raise IOError(
                                     "dimension " + str(this_line_num_dim + 1) + " on "
-                                    "line " + str(line_num + 1) + " ends with a ':' while "
+                                    "line "
+                                    + str(line_num + 1)
+                                    + " ends with a ':' while "
                                     "it should list a class "
                                     "value"
                                 )
                             elif has_another_dimension and not class_labels:
                                 if len(instance_list) < (this_line_num_dim + 1):
                                     instance_list.append([])
-                                instance_list[this_line_num_dim].append(pd.Series(dtype=np.float32))
+                                instance_list[this_line_num_dim].append(
+                                    pd.Series(dtype=np.float32)
+                                )
                                 this_line_num_dim += 1
                                 num_dimensions = this_line_num_dim
                             # If this is the 1st line of data we have seen
@@ -935,7 +1015,9 @@ def convert_tsfile_to_dataframe(
                                     num_dimensions = this_line_num_dim
                                 if num_dimensions != this_line_num_dim:
                                     raise IOError(
-                                        "line " + str(line_num + 1) + " does not have the "
+                                        "line "
+                                        + str(line_num + 1)
+                                        + " does not have the "
                                         "same number of "
                                         "dimensions as the "
                                         "previous line of "
@@ -965,12 +1047,17 @@ def convert_tsfile_to_dataframe(
                         elif has_another_dimension and not class_labels:
                             if len(instance_list) < (this_line_num_dim + 1):
                                 instance_list.append([])
-                            instance_list[this_line_num_dim].append(pd.Series(dtype="object"))
+                            instance_list[this_line_num_dim].append(
+                                pd.Series(dtype="object")
+                            )
                             this_line_num_dim += 1
                             num_dimensions = this_line_num_dim
                         # If this is the 1st line of data we have seen then
                         # note the dimensions
-                        if not has_another_value and num_dimensions != this_line_num_dim:
+                        if (
+                            not has_another_value
+                            and num_dimensions != this_line_num_dim
+                        ):
                             raise IOError(
                                 "line " + str(line_num + 1) + " does not have the same "
                                 "number of dimensions as the "
@@ -1002,7 +1089,10 @@ def convert_tsfile_to_dataframe(
                         if this_line_num_dim != num_dimensions:
                             raise IOError(
                                 "inconsistent number of dimensions. "
-                                "Expecting " + str(num_dimensions) + " but have read " + str(this_line_num_dim)
+                                "Expecting "
+                                + str(num_dimensions)
+                                + " but have read "
+                                + str(this_line_num_dim)
                             )
                         # Process the data for each dimension
                         for dim in range(0, num_dimensions):
@@ -1078,17 +1168,26 @@ def get_split_params(
 
     if "valid" in split_config:
         for group in ["train", "test", "valid"]:
-            if ((split_config[group][0] < 1) and (split_config[group][0] != 0)) or (split_config[group][1] < 1):
+            if ((split_config[group][0] < 1) and (split_config[group][0] != 0)) or (
+                split_config[group][1] < 1
+            ):
                 split_params[group] = {
                     "start_fraction": split_config[group][0],
                     "end_fraction": split_config[group][1],
-                    "start_offset": (context_length if (context_length and group != "train") else 0),
+                    "start_offset": (
+                        context_length if (context_length and group != "train") else 0
+                    ),
                 }
                 split_function[group] = select_by_relative_fraction
             else:
                 split_params[group] = {
                     "start_index": (
-                        split_config[group][0] - (context_length if (context_length and group != "train") else 0)
+                        split_config[group][0]
+                        - (
+                            context_length
+                            if (context_length and group != "train")
+                            else 0
+                        )
                     ),
                     "end_index": split_config[group][1],
                 }
@@ -1152,7 +1251,9 @@ def convert_tsf(filename: str) -> pd.DataFrame:
             except ValueError:
                 freq = tsf_to_pandas_freq_map[frequency]
             except KeyError:
-                raise ValueError(f"Input file contains an unknown frequency unit {freq_unit}")
+                raise ValueError(
+                    f"Input file contains an unknown frequency unit {freq_unit}"
+                )
     else:
         freq = None
 
@@ -1166,9 +1267,13 @@ def convert_tsf(filename: str) -> pd.DataFrame:
     dfs = []
     for index, item in loaded_data.iterrows():
         if freq and source_timestamp_column:
-            timestamps = pd.date_range(item[source_timestamp_column], periods=len(item.series_value), freq=freq)
+            timestamps = pd.date_range(
+                item[source_timestamp_column], periods=len(item.series_value), freq=freq
+            )
         elif freq:
-            timestamps = pd.date_range(default_start_timestamp, periods=len(item.series_value), freq=freq)
+            timestamps = pd.date_range(
+                default_start_timestamp, periods=len(item.series_value), freq=freq
+            )
         else:
             timestamps = range(len(item.series_value))
 
@@ -1212,7 +1317,9 @@ def convert_to_univariate(
     """
 
     if len(target_columns) < 2:
-        raise ValueError("`target_columns` should be a non-empty list of two or more elements.")
+        raise ValueError(
+            "`target_columns` should be a non-empty list of two or more elements."
+        )
 
     return pd.melt(
         data,
@@ -1285,7 +1392,10 @@ def convert_tsfile(filename: str) -> pd.DataFrame:
 
         for j, c in enumerate(value_columns):
             c_data = getattr(row, c)
-            if isinstance(c_data.index, pd.Timestamp) and "timestamp" not in temp_df.columns:
+            if (
+                isinstance(c_data.index, pd.Timestamp)
+                and "timestamp" not in temp_df.columns
+            ):
                 ## include timestamp columns if data includes timestamps
                 temp_df["timestamp"] = c_data.index
             temp_df[f"value_{j}"] = c_data.values
@@ -1335,7 +1445,9 @@ def encode_data(df: pd.DataFrame, timestamp_column: str) -> Dict[str, Any]:
         # rewrite all the nan to None
         # Handle numeric types only - skip Timestamp or other non-numeric types
         if len(v) > 0 and isinstance(v[0], (int, float, type(None))):
-            data_payload[k] = [vv if (vv is None) or (not isnan(vv)) else None for vv in v]
+            data_payload[k] = [
+                vv if (vv is None) or (not isnan(vv)) else None for vv in v
+            ]
 
     return data_payload
 
@@ -1368,4 +1480,6 @@ def check_nested_lengths(df: pd.DataFrame, columns: List[str]):
 
     l = df[columns].map(len).values
     if not np.all(np.isclose(l, np.tile(l[:, :1], (1, l.shape[1])))):
-        raise ValueError("Input dataframe contains rows with series that are not equal length.")
+        raise ValueError(
+            "Input dataframe contains rows with series that are not equal length."
+        )

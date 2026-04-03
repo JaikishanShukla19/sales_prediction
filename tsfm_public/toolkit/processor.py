@@ -23,7 +23,6 @@ from transformers.utils import (
     is_remote_url,
 )
 
-
 LOGGER = logging.getLogger(__file__)
 
 TYPE_TO_STRING = {
@@ -40,7 +39,12 @@ STRING_TO_TYPE = {_v: _k for _k, _v in TYPE_TO_STRING.items()}
 class BaseProcessor(FeatureExtractionMixin):
     PROCESSOR_NAME = "processor_config.json"
 
-    def save_pretrained(self, save_directory: Union[str, os.PathLike], push_to_hub: bool = False, **kwargs):
+    def save_pretrained(
+        self,
+        save_directory: Union[str, os.PathLike],
+        push_to_hub: bool = False,
+        **kwargs,
+    ):
         """
         Save a feature_extractor object to the directory `save_directory`, so that it can be re-loaded using the
         [`~feature_extraction_utils.FeatureExtractionMixin.from_pretrained`] class method.
@@ -69,7 +73,9 @@ class BaseProcessor(FeatureExtractionMixin):
             kwargs["token"] = use_auth_token
 
         if os.path.isfile(save_directory):
-            raise AssertionError(f"Provided path ({save_directory}) should be a directory, not a file")
+            raise AssertionError(
+                f"Provided path ({save_directory}) should be a directory, not a file"
+            )
 
         os.makedirs(save_directory, exist_ok=True)
 
@@ -85,7 +91,9 @@ class BaseProcessor(FeatureExtractionMixin):
             custom_object_save(self, save_directory, config=self)
 
         # If we save using the predefined names, we can load using `from_pretrained`
-        output_feature_extractor_file = os.path.join(save_directory, self.__class__.PROCESSOR_NAME)
+        output_feature_extractor_file = os.path.join(
+            save_directory, self.__class__.PROCESSOR_NAME
+        )
 
         self.to_json_file(output_feature_extractor_file)
         LOGGER.info(f"Feature extractor saved in {output_feature_extractor_file}")
@@ -140,7 +148,10 @@ class BaseProcessor(FeatureExtractionMixin):
         from_pipeline = kwargs.pop("_from_pipeline", None)
         from_auto_class = kwargs.pop("_from_auto", False)
 
-        user_agent = {"file_type": "feature extractor", "from_auto_class": from_auto_class}
+        user_agent = {
+            "file_type": "feature extractor",
+            "from_auto_class": from_auto_class,
+        }
         if from_pipeline is not None:
             user_agent["using_pipeline"] = from_pipeline
 
@@ -151,13 +162,17 @@ class BaseProcessor(FeatureExtractionMixin):
         pretrained_model_name_or_path = str(pretrained_model_name_or_path)
         is_local = os.path.isdir(pretrained_model_name_or_path)
         if os.path.isdir(pretrained_model_name_or_path):
-            feature_extractor_file = os.path.join(pretrained_model_name_or_path, cls.PROCESSOR_NAME)
+            feature_extractor_file = os.path.join(
+                pretrained_model_name_or_path, cls.PROCESSOR_NAME
+            )
         if os.path.isfile(pretrained_model_name_or_path):
             resolved_feature_extractor_file = pretrained_model_name_or_path
             is_local = True
         elif is_remote_url(pretrained_model_name_or_path):
             feature_extractor_file = pretrained_model_name_or_path
-            resolved_feature_extractor_file = download_url(pretrained_model_name_or_path)
+            resolved_feature_extractor_file = download_url(
+                pretrained_model_name_or_path
+            )
         else:
             feature_extractor_file = cls.PROCESSOR_NAME
             try:

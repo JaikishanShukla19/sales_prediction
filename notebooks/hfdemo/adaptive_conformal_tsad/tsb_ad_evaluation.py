@@ -6,7 +6,9 @@ from sklearn import metrics
 from TSB_AD.evaluation.basic_metrics import basic_metricor, generate_curve
 
 
-def get_scores_tsb_ad_eval(scores, label, thresholds=None, slidingWindow=100, version="opt", thre=250):
+def get_scores_tsb_ad_eval(
+    scores, label, thresholds=None, slidingWindow=100, version="opt", thre=250
+):
     output = {}
 
     grader = basic_metricor()
@@ -19,9 +21,13 @@ def get_scores_tsb_ad_eval(scores, label, thresholds=None, slidingWindow=100, ve
                 np.linspace(0.2, 1, 21),  # High α for broader picture
             ]
         )
-        thresholds = np.sort(np.unique(np.sort(np.concatenate([alpha_p_values, 1 - alpha_p_values]))))
+        thresholds = np.sort(
+            np.unique(np.sort(np.concatenate([alpha_p_values, 1 - alpha_p_values])))
+        )
 
-    _, _, _, _, _, _, VUS_ROC, VUS_PR = generate_curve(label.astype(int), scores, slidingWindow, version, thre)
+    _, _, _, _, _, _, VUS_ROC, VUS_PR = generate_curve(
+        label.astype(int), scores, slidingWindow, version, thre
+    )
 
     output["threshold_independent_metrics"] = {
         "AUC_ROC": metrics.roc_auc_score(label, scores),
@@ -57,7 +63,11 @@ def get_scores_tsb_ad_eval(scores, label, thresholds=None, slidingWindow=100, ve
             if metric_value >= best_threshold_metrics[th_metric + "_point"][th_metric]:
                 best_threshold_metrics[th_metric + "_point"][th_metric] = metric_value
                 best_threshold_metrics[th_metric + "_point"]["fpr"] = fpr
-                best_threshold_metrics[th_metric + "_point"]["score_threshold"] = 1 - th_effective
-                best_threshold_metrics[th_metric + "_point"]["threshold"] = 1 - th  # p-value compatible
+                best_threshold_metrics[th_metric + "_point"]["score_threshold"] = (
+                    1 - th_effective
+                )
+                best_threshold_metrics[th_metric + "_point"]["threshold"] = (
+                    1 - th
+                )  # p-value compatible
     output["threshold_dependent_metrics"] = best_threshold_metrics
     return output

@@ -15,7 +15,6 @@ from tsfm_public.models.patchtst_fm import (
     PatchTSTFMForPrediction,
 )
 
-
 set_seed(42)
 
 
@@ -89,7 +88,12 @@ class PatchTSTFMFunctionalTests(unittest.TestCase):
 
         # Check that single tensor output has correct shape
         # Expected: (batch_size, num_quantiles, forecast_length, num_channels)
-        expected_shape = (batch_size, test_config.num_quantile, forecast_length, num_channels)
+        expected_shape = (
+            batch_size,
+            test_config.num_quantile,
+            forecast_length,
+            num_channels,
+        )
         self.assertEqual(output_single.quantile_outputs.shape, expected_shape)
 
         # Check that list output has correct number of elements
@@ -98,7 +102,9 @@ class PatchTSTFMFunctionalTests(unittest.TestCase):
         # Check that each element in list has correct shape
         # Expected: (1, num_quantiles, forecast_length, num_channels) for each element
         for i, sample in enumerate(output_list.quantile_outputs):
-            self.assertEqual(sample.shape, (test_config.num_quantile, forecast_length, num_channels))
+            self.assertEqual(
+                sample.shape, (test_config.num_quantile, forecast_length, num_channels)
+            )
 
         # Concatenate list outputs to compare with single tensor output
         output_list_concat = torch.stack(output_list.quantile_outputs, dim=0)
@@ -174,11 +180,15 @@ class PatchTSTFMFunctionalTests(unittest.TestCase):
         # output_reshaped shape: (batch_size * num_channels, num_quantiles, forecast_length, 1)
         # Reshape to: (batch_size, num_channels, num_quantiles, forecast_length, 1)
         # Then permute to: (batch_size, num_quantiles, forecast_length, num_channels)
-        output_reshaped_back = rearrange(output_reshaped.quantile_outputs, "(B N) Q F 1 -> B Q F N", B=batch_size)
+        output_reshaped_back = rearrange(
+            output_reshaped.quantile_outputs, "(B N) Q F 1 -> B Q F N", B=batch_size
+        )
 
         # Verify shapes match
         self.assertEqual(
-            output_original.quantile_outputs.shape, output_reshaped_back.shape, "Shape mismatch after reshaping"
+            output_original.quantile_outputs.shape,
+            output_reshaped_back.shape,
+            "Shape mismatch after reshaping",
         )
 
         # Verify that both approaches produce equal results
@@ -250,7 +260,12 @@ class PatchTSTFMFunctionalTests(unittest.TestCase):
 
         # Verify that stacking the list produces a valid tensor
         stacked_output = torch.stack(output.quantile_outputs, dim=0)
-        expected_stacked_shape = (num_series, test_config.num_quantile, forecast_length, 1)
+        expected_stacked_shape = (
+            num_series,
+            test_config.num_quantile,
+            forecast_length,
+            1,
+        )
         self.assertEqual(
             stacked_output.shape,
             expected_stacked_shape,

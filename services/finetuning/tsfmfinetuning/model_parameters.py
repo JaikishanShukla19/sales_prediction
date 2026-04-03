@@ -12,7 +12,6 @@ import pydantic
 # Third Party
 from pydantic import BaseModel, ConfigDict, Field
 
-
 LOGGER = logging.getLogger(__file__)
 
 
@@ -37,7 +36,9 @@ def get_pydantic_parameters(
     """
 
     if include_set is not None and exclude_set is not None:
-        raise ValueError("Only one of `include_set` or `exclude_set` should be specified.")
+        raise ValueError(
+            "Only one of `include_set` or `exclude_set` should be specified."
+        )
 
     config_class_name = f"{base_name}Config"
 
@@ -83,7 +84,9 @@ def _create_pydantic_model_from_hf_config(
             # the magic happens
             LOGGER.debug(f"Rewriting optional parameter {name}")
 
-            new_args = tuple([arg for arg in get_args(param.annotation) if arg is not NoneType])
+            new_args = tuple(
+                [arg for arg in get_args(param.annotation) if arg is not NoneType]
+            )
             # to do: reset defaults appropriately
             if len(new_args) > 1:
                 field_definitions[name] = (Union[new_args], param.default)
@@ -179,7 +182,9 @@ class TinyTimeMixerParameters(BaseModel):
     )
     # check
     decoder_num_layers: int = Field(default=8, description="Number of decoder layers")
-    decoder_adaptive_patching_levels: int = Field(default=0, description="Number of adaptive patching levels")
+    decoder_adaptive_patching_levels: int = Field(
+        default=0, description="Number of adaptive patching levels"
+    )
     decoder_raw_residual: bool = Field(
         default=False,
         description="Flag to enable merging of raw embedding with encoder embedding for decoder input",
@@ -193,8 +198,18 @@ class TinyTimeMixerParameters(BaseModel):
         default=True,
         description="Use forecast channel mixing when forecasting, useful when exogenous features are present",
     )
-    fcm_gated_attn: bool = Field(default=True, description="Enable gated attention in the forecast channel mixer")
-    fcm_context_length: int = Field(default=1, description="The context length for forecast channel mixing")
-    fcm_use_mixer: bool = Field(default=True, description="Use the forecast channel mixer")
-    fcm_mix_layers: int = Field(default=2, description="Number of mixing layers for the forecast channel mixer")
-    fcm_prepend_past: bool = Field(default=True, description="Prepend last context for forecast reconciliation")
+    fcm_gated_attn: bool = Field(
+        default=True, description="Enable gated attention in the forecast channel mixer"
+    )
+    fcm_context_length: int = Field(
+        default=1, description="The context length for forecast channel mixing"
+    )
+    fcm_use_mixer: bool = Field(
+        default=True, description="Use the forecast channel mixer"
+    )
+    fcm_mix_layers: int = Field(
+        default=2, description="Number of mixing layers for the forecast channel mixer"
+    )
+    fcm_prepend_past: bool = Field(
+        default=True, description="Prepend last context for forecast reconciliation"
+    )

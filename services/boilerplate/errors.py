@@ -8,7 +8,10 @@ class ErrorType(IntEnum):
     UNKNOWN_ERROR = 200
 
 
-_ex2ErrorType = {TypeError: ErrorType.TYPE_ERROR, ValueError: ErrorType.INCORRECT_PARAMETER_ERROR}
+_ex2ErrorType = {
+    TypeError: ErrorType.TYPE_ERROR,
+    ValueError: ErrorType.INCORRECT_PARAMETER_ERROR,
+}
 
 
 US_ENG_MESSAGES = {

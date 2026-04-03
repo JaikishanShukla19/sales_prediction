@@ -10,12 +10,19 @@ from transformers import Trainer, TrainingArguments
 from tsfm_public.toolkit.dataset import (
     ForecastDFDataset,
 )
-from tsfm_public.toolkit.recursive_predictor import RecursivePredictor, RecursivePredictorConfig
+from tsfm_public.toolkit.recursive_predictor import (
+    RecursivePredictor,
+    RecursivePredictorConfig,
+)
 from tsfm_public.toolkit.util import select_by_index
 
 
 def get_dataset_for_rolling_prediction(
-    df, rolling_prediction_length, target_columns, conditional_columns=[], control_columns=[]
+    df,
+    rolling_prediction_length,
+    target_columns,
+    conditional_columns=[],
+    control_columns=[],
 ):
     # ROLLING_PREDICTION_LENGTH = 192
     context_length = 512
@@ -53,7 +60,9 @@ def test_simple_rolling_prediction(ttm_model, etth_data_base):
     target_columns = ["HUFL", "HULL", "MUFL", "MULL", "LUFL", "LULL", "OT"]
 
     test_dataset = get_dataset_for_rolling_prediction(
-        etth_data_base, rolling_prediction_length=rolling_prediction_length, target_columns=target_columns
+        etth_data_base,
+        rolling_prediction_length=rolling_prediction_length,
+        target_columns=target_columns,
     )
 
     model = ttm_model()
@@ -73,7 +82,10 @@ def test_simple_rolling_prediction(ttm_model, etth_data_base):
     zeroshot_trainer = Trainer(
         model=rolling_model,
         args=TrainingArguments(
-            output_dir=temp_dir, per_device_eval_batch_size=32, seed=SEED, label_names=["future_values"]
+            output_dir=temp_dir,
+            per_device_eval_batch_size=32,
+            seed=SEED,
+            label_names=["future_values"],
         ),
     )
 
@@ -99,7 +111,10 @@ def test_rolling_prediction_with_exogenous(ttm_model, etth_data_base):
     target_columns = ["OT"]
 
     # simulate an exogenous model by setting some parameters
-    model = ttm_model(prediction_channel_indices=[0], num_input_channels=len(control_columns) + len(target_columns))
+    model = ttm_model(
+        prediction_channel_indices=[0],
+        num_input_channels=len(control_columns) + len(target_columns),
+    )
 
     test_dataset = get_dataset_for_rolling_prediction(
         etth_data_base,
@@ -124,7 +139,10 @@ def test_rolling_prediction_with_exogenous(ttm_model, etth_data_base):
     zeroshot_trainer = Trainer(
         model=rolling_model,
         args=TrainingArguments(
-            output_dir=temp_dir, per_device_eval_batch_size=32, seed=SEED, label_names=["future_values"]
+            output_dir=temp_dir,
+            per_device_eval_batch_size=32,
+            seed=SEED,
+            label_names=["future_values"],
         ),
     )
 

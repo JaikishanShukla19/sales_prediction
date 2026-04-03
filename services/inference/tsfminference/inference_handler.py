@@ -14,7 +14,6 @@ from .inference_payloads import (
 )
 from .service_handler import HandlerFunction, ServiceHandler
 
-
 LOGGER = logging.getLogger(__file__)
 
 
@@ -37,7 +36,9 @@ class InferenceHandler(ServiceHandler):
 
         """
 
-        return super().load(model_id, model_path, handler_function=HandlerFunction.INFERENCE.value)
+        return super().load(
+            model_id, model_path, handler_function=HandlerFunction.INFERENCE.value
+        )
 
     def run(
         self,
@@ -59,26 +60,39 @@ class InferenceHandler(ServiceHandler):
         """
 
         if not self.prepared:
-            return None, RuntimeError("Service wrapper has not yet been prepared; run `handler.prepare()` first.")
+            return None, RuntimeError(
+                "Service wrapper has not yet been prepared; run `handler.prepare()` first."
+            )
 
         try:
-            result = self.implementation.run(data, schema=schema, parameters=parameters, **kwargs)
+            result = self.implementation.run(
+                data, schema=schema, parameters=parameters, **kwargs
+            )
             encoded_result = encode_dataframe(result)
             counts = self.implementation.calculate_data_point_counts(
                 data, output_data=result, schema=schema, parameters=parameters, **kwargs
             )
-            return PredictOutput(
-                model_id=str(self.implementation.model_id),
-                created_at=datetime.datetime.now().isoformat(),
-                results=[encoded_result],
-                **counts,
-            ), None
+            return (
+                PredictOutput(
+                    model_id=str(self.implementation.model_id),
+                    created_at=datetime.datetime.now().isoformat(),
+                    results=[encoded_result],
+                    **counts,
+                ),
+                None,
+            )
 
         except Exception as e:
             return None, e
 
 
-def encode_dataframe(result: pd.DataFrame, timestamp_column: str = None) -> Dict[str, List[Any]]:
-    if timestamp_column and pd.api.types.is_datetime64_any_dtype(result[timestamp_column]):
-        result[timestamp_column] = result[timestamp_column].apply(lambda x: x.isoformat())
+def encode_dataframe(
+    result: pd.DataFrame, timestamp_column: str = None
+) -> Dict[str, List[Any]]:
+    if timestamp_column and pd.api.types.is_datetime64_any_dtype(
+        result[timestamp_column]
+    ):
+        result[timestamp_column] = result[timestamp_column].apply(
+            lambda x: x.isoformat()
+        )
     return result.to_dict(orient="list")

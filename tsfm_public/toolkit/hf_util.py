@@ -26,7 +26,9 @@ def register_config(model_type: str, model_config_name: str, module_path: str) -
         mod = importlib.import_module(module_path)
         conf_class = getattr(mod, model_config_name, None)
     except ModuleNotFoundError as exc:  # modulenot found, key error ?
-        raise RuntimeError(f"Could not load {model_config_name} from {module_path}") from exc
+        raise RuntimeError(
+            f"Could not load {model_config_name} from {module_path}"
+        ) from exc
 
     if conf_class is not None:
         AutoConfig.register(model_type, conf_class)

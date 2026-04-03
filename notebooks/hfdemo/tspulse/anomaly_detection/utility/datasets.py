@@ -5,7 +5,6 @@ import numpy as np
 import torch
 import torch.utils.data
 
-
 epsilon = 1e-8
 
 
@@ -44,7 +43,9 @@ class TSBADFinetuneDataset(torch.utils.data.Dataset):
             self.samples, self.gen_labels = self._generate_samples()
         else:
             self.samples = self._generate_samples()
-        self.input_mask = np.ones((self.window_size, data.shape[1]), dtype=np.float32)  # Fixed input mask
+        self.input_mask = np.ones(
+            (self.window_size, data.shape[1]), dtype=np.float32
+        )  # Fixed input mask
         if aggr_window_size is not None:
             self.input_mask[:aggr_window_size, :] = 0
 

@@ -117,14 +117,20 @@ class RecursivePredictor(RecursivePredictorPreTrainedModel):
         """
         return_dict = return_dict if return_dict is not None else self.use_return_dict
 
-        total_runs = math.ceil(self.requested_prediction_length / self.model_prediction_length)
+        total_runs = math.ceil(
+            self.requested_prediction_length / self.model_prediction_length
+        )
 
-        predicted_sequence = past_values.clone()  # Initialize predicted sequence with input sequence
+        predicted_sequence = (
+            past_values.clone()
+        )  # Initialize predicted sequence with input sequence
 
         model_prediction_length = self.model_prediction_length
 
         this_past = past_values.clone()
-        this_past_observed_mask = past_observed_mask.clone() if past_observed_mask is not None else None
+        this_past_observed_mask = (
+            past_observed_mask.clone() if past_observed_mask is not None else None
+        )
 
         predicted_sequence = None
 
@@ -135,9 +141,15 @@ class RecursivePredictor(RecursivePredictorPreTrainedModel):
             future_start_idx = i * model_prediction_length
             future_end_idx = (i + 1) * model_prediction_length
 
-            this_future = future_values[:, future_start_idx:future_end_idx] if future_values is not None else None
+            this_future = (
+                future_values[:, future_start_idx:future_end_idx]
+                if future_values is not None
+                else None
+            )
             this_future_observed_mask = (
-                future_observed_mask[:, future_start_idx:future_end_idx] if future_observed_mask is not None else None
+                future_observed_mask[:, future_start_idx:future_end_idx]
+                if future_observed_mask is not None
+                else None
             )
 
             # predict and concatenate results
@@ -152,26 +164,45 @@ class RecursivePredictor(RecursivePredictorPreTrainedModel):
 
             next_point = next_point["prediction_outputs"]
             predicted_sequence = (
-                torch.cat((predicted_sequence, next_point), dim=1) if predicted_sequence is not None else next_point
+                torch.cat((predicted_sequence, next_point), dim=1)
+                if predicted_sequence is not None
+                else next_point
             )
 
             # create the new part of the past, using the current future and new predictions
             if this_future is not None and prediction_channel_indices is not None:
                 new_past = this_future.clone()
-                new_past[:, :, self.model.config.prediction_channel_indices] = next_point
+                new_past[:, :, self.model.config.prediction_channel_indices] = (
+                    next_point
+                )
             else:
                 new_past = next_point
 
             # update the past observed mask by copying the future
-            if this_future_observed_mask is not None and prediction_channel_indices is not None:
+            if (
+                this_future_observed_mask is not None
+                and prediction_channel_indices is not None
+            ):
                 new_past_observed_mask = this_future_observed_mask.clone()
-                new_past_observed_mask[:, :, self.model.config.prediction_channel_indices] = True
+                new_past_observed_mask[
+                    :, :, self.model.config.prediction_channel_indices
+                ] = True
             else:
-                new_past_observed_mask = torch.ones_like(this_future_observed_mask, dtype=torch.bool)
+                new_past_observed_mask = torch.ones_like(
+                    this_future_observed_mask, dtype=torch.bool
+                )
 
-            this_past = torch.cat([this_past[:, model_prediction_length:], new_past], dim=1)
+            this_past = torch.cat(
+                [this_past[:, model_prediction_length:], new_past], dim=1
+            )
             this_past_observed_mask = (
-                torch.cat([this_past_observed_mask[:, model_prediction_length:], new_past_observed_mask], dim=1)
+                torch.cat(
+                    [
+                        this_past_observed_mask[:, model_prediction_length:],
+                        new_past_observed_mask,
+                    ],
+                    dim=1,
+                )
                 if this_future_observed_mask is not None
                 else None
             )

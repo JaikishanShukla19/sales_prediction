@@ -5,7 +5,6 @@
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import logging
 
-
 logger = logging.get_logger(__name__)
 
 PATCHTSTFM_PRETRAINED_CONFIG_ARCHIVE_MAP = {}
@@ -46,9 +45,13 @@ class PatchTSTFMConfig(PretrainedConfig):
         self.num_quantile = num_quantile
 
         if num_quantile % 9 == 0:
-            quantiles = [i / (self.num_quantile + 1) for i in range(1, self.num_quantile + 1)]
+            quantiles = [
+                i / (self.num_quantile + 1) for i in range(1, self.num_quantile + 1)
+            ]
         else:
-            quantiles = [i / (self.num_quantile - 1) for i in range(1, self.num_quantile - 1)]
+            quantiles = [
+                i / (self.num_quantile - 1) for i in range(1, self.num_quantile - 1)
+            ]
             quantiles = [0.01] + quantiles + [0.99]
         self.quantile_levels = quantiles
         # self.quantiles = quantiles

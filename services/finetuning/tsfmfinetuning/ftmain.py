@@ -22,11 +22,17 @@ def main():
     # this will give us param validation
 
     if args.model_arch == "ttm" and args.task_type == "forecasting":
-        input: TinyTimeMixerForecastingTuneInput = TinyTimeMixerForecastingTuneInput(**payload)
+        input: TinyTimeMixerForecastingTuneInput = TinyTimeMixerForecastingTuneInput(
+            **payload
+        )
         ftr: FinetuningRuntime = FinetuningRuntime()
-        ftr.finetuning(input=input, tuned_model_name=args.model_name, output_dir=args.target_dir)
+        ftr.finetuning(
+            input=input, tuned_model_name=args.model_name, output_dir=args.target_dir
+        )
     else:
-        raise NotImplementedError(f"model arch/task type not implemented {args.model_arch_type} {args.task_type}")
+        raise NotImplementedError(
+            f"model arch/task type not implemented {args.model_arch_type} {args.task_type}"
+        )
 
 
 if __name__ == "__main__":

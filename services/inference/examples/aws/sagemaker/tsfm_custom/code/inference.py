@@ -6,7 +6,6 @@ import sys
 import torch
 from fastapi import HTTPException
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 

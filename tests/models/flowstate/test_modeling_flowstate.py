@@ -19,7 +19,6 @@ from tsfm_public.models.flowstate.modeling_flowstate import (
     FlowStateModelOutput,
 )
 
-
 np.set_printoptions(threshold=sys.maxsize)
 
 TOLERANCE = 1e-4
@@ -60,10 +59,14 @@ class FlowStateFunctionalTests(unittest.TestCase):
             cls.params["num_input_channels"],
         )
         cls.constant_data = (
-            cls.constant_data if cls.params["batch_first"] else torch.transpose(cls.constant_data, 1, 0)
+            cls.constant_data
+            if cls.params["batch_first"]
+            else torch.transpose(cls.constant_data, 1, 0)
         )
         # load large stored values
-        test_values_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_values.pt")
+        test_values_path = os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "test_values.pt"
+        )
         loaded_dict = torch.load(test_values_path)
         for key, value in loaded_dict.items():
             setattr(cls, key, value)
@@ -86,30 +89,58 @@ class FlowStateFunctionalTests(unittest.TestCase):
             mdl = FlowStateForPrediction(config)
 
             target_output["target_output"] = self.__class__.correct_forecast_output
-            target_output["enc_output_hidden_states"] = self.__class__.enc_output_forprediction_hidden_states
-            target_output["enc_output_last_hidden_state"] = self.__class__.enc_output_forprediction_last_hidden_state
-            target_output["dec_output_last_hidden_state"] = self.__class__.dec_output_forprediction_last_hidden_state
-            target_output["dec_output_hidden_states"] = self.__class__.dec_output_forprediction_hidden_states
+            target_output["enc_output_hidden_states"] = (
+                self.__class__.enc_output_forprediction_hidden_states
+            )
+            target_output["enc_output_last_hidden_state"] = (
+                self.__class__.enc_output_forprediction_last_hidden_state
+            )
+            target_output["dec_output_last_hidden_state"] = (
+                self.__class__.dec_output_forprediction_last_hidden_state
+            )
+            target_output["dec_output_hidden_states"] = (
+                self.__class__.dec_output_forprediction_hidden_states
+            )
 
             target_names["target_output"] = "correct_forecast_output"
-            target_names["enc_output_hidden_states"] = "enc_output_forprediction_hidden_states"
-            target_names["enc_output_last_hidden_state"] = "enc_output_forprediction_last_hidden_state"
-            target_names["dec_output_last_hidden_state"] = "dec_output_forprediction_last_hidden_state"
-            target_names["dec_output_hidden_states"] = "dec_output_forprediction_hidden_states"
+            target_names["enc_output_hidden_states"] = (
+                "enc_output_forprediction_hidden_states"
+            )
+            target_names["enc_output_last_hidden_state"] = (
+                "enc_output_forprediction_last_hidden_state"
+            )
+            target_names["dec_output_last_hidden_state"] = (
+                "dec_output_forprediction_last_hidden_state"
+            )
+            target_names["dec_output_hidden_states"] = (
+                "dec_output_forprediction_hidden_states"
+            )
 
         elif task == "model":
             mdl = FlowStateModel(config)
 
             target_output["target_output"] = self.__class__.correct_pred_output
-            target_output["enc_output_hidden_states"] = self.__class__.enc_output_hidden_states
-            target_output["enc_output_last_hidden_state"] = self.__class__.enc_output_last_hidden_state
-            target_output["dec_output_last_hidden_state"] = self.__class__.dec_output_last_hidden_state
-            target_output["dec_output_hidden_states"] = self.__class__.dec_output_hidden_states
+            target_output["enc_output_hidden_states"] = (
+                self.__class__.enc_output_hidden_states
+            )
+            target_output["enc_output_last_hidden_state"] = (
+                self.__class__.enc_output_last_hidden_state
+            )
+            target_output["dec_output_last_hidden_state"] = (
+                self.__class__.dec_output_last_hidden_state
+            )
+            target_output["dec_output_hidden_states"] = (
+                self.__class__.dec_output_hidden_states
+            )
 
             target_names["target_output"] = "correct_pred_output"
             target_names["enc_output_hidden_states"] = "enc_output_hidden_states"
-            target_names["enc_output_last_hidden_state"] = "enc_output_last_hidden_state"
-            target_names["dec_output_last_hidden_state"] = "dec_output_last_hidden_state"
+            target_names["enc_output_last_hidden_state"] = (
+                "enc_output_last_hidden_state"
+            )
+            target_names["dec_output_last_hidden_state"] = (
+                "dec_output_last_hidden_state"
+            )
             target_names["dec_output_hidden_states"] = "dec_output_hidden_states"
         else:
             raise ValueError(f"Unknown task {task}")
@@ -119,14 +150,16 @@ class FlowStateFunctionalTests(unittest.TestCase):
         )
 
         if task == "forecast":
-            if not (config.use_return_dict and isinstance(model_output, FlowStateForPredictionOutput)) and not (
-                not config.return_dict and isinstance(model_output, tuple)
-            ):
+            if not (
+                config.use_return_dict
+                and isinstance(model_output, FlowStateForPredictionOutput)
+            ) and not (not config.return_dict and isinstance(model_output, tuple)):
                 raise Exception("Return type of the model was incorrect!")
         elif task == "model":
-            if not (config.use_return_dict and isinstance(model_output, FlowStateModelOutput)) and not (
-                not config.return_dict and isinstance(model_output, tuple)
-            ):
+            if not (
+                config.use_return_dict
+                and isinstance(model_output, FlowStateModelOutput)
+            ) and not (not config.return_dict and isinstance(model_output, tuple)):
                 raise Exception("Return type of the model was incorrect!")
         else:
             pass
@@ -134,7 +167,9 @@ class FlowStateFunctionalTests(unittest.TestCase):
         if not config.return_dict and task == "forecast":
             model_output = FlowStateForPredictionOutput(
                 loss=model_output[0],
-                prediction_outputs=model_output[1],  # tensor [batch_size x prediction_length x num_input_channels]
+                prediction_outputs=model_output[
+                    1
+                ],  # tensor [batch_size x prediction_length x num_input_channels]
                 backbone_hidden_state=model_output[2],
                 decoder_hidden_state=model_output[3],
                 hidden_states=model_output[4],
@@ -150,15 +185,21 @@ class FlowStateFunctionalTests(unittest.TestCase):
                 decoder_hidden_state=model_output[5],
             )
 
-        self.compare_outputs(input_data, model_output, target_output, target_names, task, check_values)
+        self.compare_outputs(
+            input_data, model_output, target_output, target_names, task, check_values
+        )
 
     def _compare(self, actual, target, check_values, name=None, msg=""):
         # Check if overwrite mode is enabled
-        overwrite_mode = True  # os.environ.get('OVERWRITE_TEST_VALUES', '').lower() == 'true'
+        overwrite_mode = (
+            True  # os.environ.get('OVERWRITE_TEST_VALUES', '').lower() == 'true'
+        )
 
         if overwrite_mode and name:
             # Load existing test_values.pt, update the specific key, and save
-            test_values_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test_values.pt")
+            test_values_path = os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "test_values.pt"
+            )
             try:
                 test_values = torch.load(test_values_path)
             except FileNotFoundError:
@@ -184,7 +225,9 @@ class FlowStateFunctionalTests(unittest.TestCase):
             else:
                 # Single value
                 test_values[name] = actual.detach().clone()
-                print(f"{((actual - target).abs() / target * 100).mean()}% off on average")
+                print(
+                    f"{((actual - target).abs() / target * 100).mean()}% off on average"
+                )
 
             torch.save(test_values, test_values_path)
             print(f"Overwritten '{name}' in test_values.pt")
@@ -194,15 +237,21 @@ class FlowStateFunctionalTests(unittest.TestCase):
         if isinstance(target, list) and isinstance(actual, list):
             for i, (a, t) in enumerate(zip(actual, target)):
                 sub_name = f"{name}_{i}" if name else None
-                self._compare(a, t, check_values, name=sub_name, msg=f"{msg} (index {i})")
+                self._compare(
+                    a, t, check_values, name=sub_name, msg=f"{msg} (index {i})"
+                )
             return
 
         if not check_values:
             actual, target = actual.shape, target.shape
 
-        torch.testing.assert_close(actual, target, rtol=TOLERANCE, atol=TOLERANCE, msg=msg)
+        torch.testing.assert_close(
+            actual, target, rtol=TOLERANCE, atol=TOLERANCE, msg=msg
+        )
 
-    def compare_outputs(self, input_data, model_output, target_output, target_names, task, check_values):
+    def compare_outputs(
+        self, input_data, model_output, target_output, target_names, task, check_values
+    ):
         self._compare(
             model_output.backbone_hidden_state,
             target_output["enc_output_last_hidden_state"],
@@ -289,7 +338,9 @@ class FlowStateFunctionalTests(unittest.TestCase):
         device = "cpu"
 
         input_data = (
-            self.__class__.constant_data if batch_first else torch.transpose(self.__class__.constant_data, 1, 0)
+            self.__class__.constant_data
+            if batch_first
+            else torch.transpose(self.__class__.constant_data, 1, 0)
         ).to(device)
 
         torch.manual_seed(42)
@@ -298,7 +349,9 @@ class FlowStateFunctionalTests(unittest.TestCase):
         params = self.__class__.params.copy()
         params.update(return_dict=return_dict, batch_first=batch_first)
 
-        self.check_module(task=task, params=params, input_data=input_data, check_values=check_values)
+        self.check_module(
+            task=task, params=params, input_data=input_data, check_values=check_values
+        )
 
     @parameterized.expand(
         [
@@ -326,13 +379,18 @@ class FlowStateFunctionalTests(unittest.TestCase):
         if batch_first:
             input_data = self.__class__.constant_data.to(device)[:1, :]
         else:
-            input_data = torch.transpose(self.__class__.constant_data, 1, 0).to(device)[:, :1, :]
+            input_data = torch.transpose(self.__class__.constant_data, 1, 0).to(device)[
+                :, :1, :
+            ]
 
         torch.manual_seed(42)
         torch.cuda.manual_seed_all(42)
 
         config = FlowStateConfig.from_json_file(
-            os.path.join(os.path.dirname(os.path.abspath(__file__)), "hf_granite-flowstate-small_config.json")
+            os.path.join(
+                os.path.dirname(os.path.abspath(__file__)),
+                "hf_granite-flowstate-small_config.json",
+            )
         )
         config.batch_first = batch_first
         model = FlowStateForPrediction(copy.deepcopy(config)).to(device)
@@ -381,7 +439,9 @@ class FlowStateFunctionalTests(unittest.TestCase):
             model = model.model
             if return_dict:
                 if batch_first:
-                    name_prefix = "hf_granite_FlowStateModel_batch_size_True_return_dict_True"
+                    name_prefix = (
+                        "hf_granite_FlowStateModel_batch_size_True_return_dict_True"
+                    )
                     target_output = FlowStateModelOutput(
                         last_hidden_state=self.hf_granite_FlowStateModel_batch_size_True_return_dict_True_last_hidden_state,
                         hidden_states=self.hf_granite_FlowStateModel_batch_size_True_return_dict_True_hidden_states,
@@ -391,7 +451,9 @@ class FlowStateFunctionalTests(unittest.TestCase):
                         decoder_hidden_state=self.hf_granite_FlowStateModel_batch_size_True_return_dict_True_decoder_hidden_state,
                     )
                 else:
-                    name_prefix = "hf_granite_FlowStateModel_batch_size_False_return_dict_True"
+                    name_prefix = (
+                        "hf_granite_FlowStateModel_batch_size_False_return_dict_True"
+                    )
                     target_output = FlowStateModelOutput(
                         last_hidden_state=self.hf_granite_FlowStateModel_batch_size_False_return_dict_True_last_hidden_state,
                         hidden_states=self.hf_granite_FlowStateModel_batch_size_False_return_dict_True_hidden_states,
@@ -402,7 +464,9 @@ class FlowStateFunctionalTests(unittest.TestCase):
                     )
             else:
                 if batch_first:
-                    name_prefix = "hf_granite_FlowStateModel_batch_size_True_return_dict_True"
+                    name_prefix = (
+                        "hf_granite_FlowStateModel_batch_size_True_return_dict_True"
+                    )
                     target_output = [
                         self.hf_granite_FlowStateModel_batch_size_True_return_dict_True_last_hidden_state,
                         self.hf_granite_FlowStateModel_batch_size_True_return_dict_True_hidden_states,
@@ -412,7 +476,9 @@ class FlowStateFunctionalTests(unittest.TestCase):
                         self.hf_granite_FlowStateModel_batch_size_True_return_dict_True_decoder_hidden_state,
                     ]
                 else:
-                    name_prefix = "hf_granite_FlowStateModel_batch_size_False_return_dict_True"
+                    name_prefix = (
+                        "hf_granite_FlowStateModel_batch_size_False_return_dict_True"
+                    )
                     target_output = [
                         self.hf_granite_FlowStateModel_batch_size_False_return_dict_True_last_hidden_state,
                         self.hf_granite_FlowStateModel_batch_size_False_return_dict_True_hidden_states,
@@ -451,7 +517,9 @@ class FlowStateFunctionalTests(unittest.TestCase):
 
                     # Construct attribute name
                     attr_name = (
-                        f"{name_prefix}_{index_to_suffix.get(ind, 'unknown')}" if ind in index_to_suffix else None
+                        f"{name_prefix}_{index_to_suffix.get(ind, 'unknown')}"
+                        if ind in index_to_suffix
+                        else None
                     )
 
                     self._compare(

@@ -7,7 +7,9 @@ import numpy as np
 import pytest
 
 from tsfm_public import TSPulseConfig, TSPulseForReconstruction
-from tsfm_public.toolkit.time_series_imputation_pipeline import TimeSeriesImputationPipeline
+from tsfm_public.toolkit.time_series_imputation_pipeline import (
+    TimeSeriesImputationPipeline,
+)
 from tsfm_public.toolkit.time_series_preprocessor import TimeSeriesPreprocessor
 
 
@@ -64,7 +66,9 @@ def test_time_series_imputation_pipeline_defaults(tspulse_model, etth_missing_da
     tsp = TimeSeriesPreprocessor(target_columns=params["target_columns"], scaling=True)
     tsp.train(train_data)
 
-    pipe = TimeSeriesImputationPipeline(tspulse_model, feature_extractor=tsp, device="cpu")
+    pipe = TimeSeriesImputationPipeline(
+        tspulse_model, feature_extractor=tsp, device="cpu"
+    )
 
     test_imputed = pipe(test_data)
 
@@ -80,7 +84,9 @@ def test_imputation_pipeline_outputs_for_nan(tspulse_model, etth_missing_data):
     tsp = TimeSeriesPreprocessor(target_columns=params["target_columns"], scaling=True)
     tsp.train(train_data)
 
-    pipe = TimeSeriesImputationPipeline(tspulse_model, feature_extractor=tsp, device="cpu")
+    pipe = TimeSeriesImputationPipeline(
+        tspulse_model, feature_extractor=tsp, device="cpu"
+    )
 
     test_imputed = pipe(test_data)
 
@@ -91,14 +97,18 @@ def test_imputation_pipeline_outputs_for_nan(tspulse_model, etth_missing_data):
     assert not test_imputed[imputed_columns].isnull().values.any()
 
 
-def test_imputation_pipeline_outputs_for_original_values(tspulse_model, etth_missing_data):
+def test_imputation_pipeline_outputs_for_original_values(
+    tspulse_model, etth_missing_data
+):
     train_data, test_data, params = etth_missing_data
     test_data = test_data.copy()
 
     tsp = TimeSeriesPreprocessor(target_columns=params["target_columns"], scaling=True)
     tsp.train(train_data)
 
-    pipe = TimeSeriesImputationPipeline(tspulse_model, feature_extractor=tsp, device="cpu")
+    pipe = TimeSeriesImputationPipeline(
+        tspulse_model, feature_extractor=tsp, device="cpu"
+    )
 
     test_imputed = pipe(test_data)
 
@@ -106,7 +116,10 @@ def test_imputation_pipeline_outputs_for_original_values(tspulse_model, etth_mis
         imp_col = f"{col}_imputed"
 
         non_missing_loc = test_imputed[col].notna()
-        assert (test_imputed.loc[non_missing_loc, col] == test_imputed.loc[non_missing_loc, imp_col]).all()
+        assert (
+            test_imputed.loc[non_missing_loc, col]
+            == test_imputed.loc[non_missing_loc, imp_col]
+        ).all()
 
 
 def test_idempotency_on_fully_observed_data(tspulse_model, etth_data):
@@ -118,13 +131,17 @@ def test_idempotency_on_fully_observed_data(tspulse_model, etth_data):
     tsp = TimeSeriesPreprocessor(target_columns=params["target_columns"], scaling=True)
     tsp.train(train_data)
 
-    pipe = TimeSeriesImputationPipeline(tspulse_model, feature_extractor=tsp, device="cpu")
+    pipe = TimeSeriesImputationPipeline(
+        tspulse_model, feature_extractor=tsp, device="cpu"
+    )
 
     test_imputed = pipe(test_data)
 
     for col in params["target_columns"]:
         imputed_col = f"{col}_imputed"
-        assert imputed_col in test_imputed.columns, f"Missing imputed column: {imputed_col}"
+        assert (
+            imputed_col in test_imputed.columns
+        ), f"Missing imputed column: {imputed_col}"
 
         original_vals = test_imputed[col].values
         imputed_vals = test_imputed[imputed_col].values

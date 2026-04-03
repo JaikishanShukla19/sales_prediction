@@ -15,7 +15,9 @@ from tsfminference.inference_payloads import (
 )
 
 
-def ts_data_base(series_length: int, num_timeseries: int, num_targets: int) -> pd.DataFrame:
+def ts_data_base(
+    series_length: int, num_timeseries: int, num_targets: int
+) -> pd.DataFrame:
     # Generate a date range
     length = series_length
     date_range = pd.date_range(start="2023-10-01", periods=length, freq="h")
@@ -32,17 +34,23 @@ def ts_data_base(series_length: int, num_timeseries: int, num_targets: int) -> p
     return answer
 
 
-def forecasting_input_base(model_id: str, series_length: int, num_timeseries: int, num_targets: int) -> dict:
+def forecasting_input_base(
+    model_id: str, series_length: int, num_timeseries: int, num_targets: int
+) -> dict:
     df: pd.DataFrame = ts_data_base(series_length, num_timeseries, num_targets)
     schema: ForecastingMetadataInput = ForecastingMetadataInput(
-        timestamp_column="date", id_columns=["ID"], target_columns=[f"VAL{idx}" for idx in range(num_targets)]
+        timestamp_column="date",
+        id_columns=["ID"],
+        target_columns=[f"VAL{idx}" for idx in range(num_targets)],
     )
     parameters: ForecastingParameters = ForecastingParameters()
     input: ForecastingInferenceInput = ForecastingInferenceInput(
         model_id=model_id,
         schema=schema,
         parameters=parameters,
-        data=df.to_dict(orient="list"),  # this should get replaced in each test case anyway,
+        data=df.to_dict(
+            orient="list"
+        ),  # this should get replaced in each test case anyway,
     )
     return input.model_dump()
 
@@ -57,11 +65,15 @@ class MyUser(FastHttpUser):
             try:
                 if attempt > 0:
                     print(f"retrying on attempt {attempt + 1}")
-                response = self.client.post(forecasting_url, json=self.payload, timeout=1200)
+                response = self.client.post(
+                    forecasting_url, json=self.payload, timeout=1200
+                )
                 if response.status_code == 200:
                     break
                 else:
-                    print(f"Attempt {attempt + 1} failed with status: {response.status_code}")
+                    print(
+                        f"Attempt {attempt + 1} failed with status: {response.status_code}"
+                    )
             except Exception as e:
                 print(f"Attempt {attempt + 1} raised exception: {e}")
 
@@ -71,7 +83,10 @@ class MyUser(FastHttpUser):
             "ttm-1024-96-r1": {"context_length": 1024, "prediction_length": 96},
             "ttm-r2": {"context_length": 512, "prediction_length": 96},
             "ttm-r2-etth-finetuned": {"context_length": 512, "prediction_length": 96},
-            "ttm-r2-etth-finetuned-control": {"context_length": 512, "prediction_length": 96},
+            "ttm-r2-etth-finetuned-control": {
+                "context_length": 512,
+                "prediction_length": 96,
+            },
             "ttm-1024-96-r2": {"context_length": 1024, "prediction_length": 96},
             "ttm-1536-96-r2": {"context_length": 1536, "prediction_length": 96},
             "ibm/test-patchtst": {"context_length": 512, "prediction_length": 96},

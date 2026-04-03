@@ -43,7 +43,8 @@ def ts_data_with_categorical():
     return pd.DataFrame(
         {
             "id": nreps(["A", "B", "C"], 50),
-            "timestamp": [datetime(2021, 1, 1) + timedelta(days=i) for i in range(50)] * 3,
+            "timestamp": [datetime(2021, 1, 1) + timedelta(days=i) for i in range(50)]
+            * 3,
             "value1": range(150),
             "value2": np.arange(150) / 3 + 10,
             "value3": np.arange(150) / 50 - 6,
@@ -76,7 +77,9 @@ def test_ts_padding(ts_data):
 
     # test date handled
     # integer
-    assert df_padded.iloc[0]["time_int"] == df.iloc[0]["time_int"] - (context_length - df.shape[0])
+    assert df_padded.iloc[0]["time_int"] == df.iloc[0]["time_int"] - (
+        context_length - df.shape[0]
+    )
 
     # date
     df_padded = ts_padding(
@@ -86,9 +89,9 @@ def test_ts_padding(ts_data):
         context_length=context_length,
     )
 
-    assert df_padded.iloc[0]["time_date"] == df.iloc[0]["time_date"] - (context_length - df.shape[0]) * timedelta(
-        days=1
-    )
+    assert df_padded.iloc[0]["time_date"] == df.iloc[0]["time_date"] - (
+        context_length - df.shape[0]
+    ) * timedelta(days=1)
 
 
 def test_pretrain_df_dataset(ts_data):
@@ -178,7 +181,9 @@ def test_forecasting_df_dataset(ts_data_with_categorical):
 
     # check that we produce outputs for static categorical
     assert "static_categorical_values" in ds[0]
-    assert ds[0]["static_categorical_values"].shape == (len(static_categorical_columns),)
+    assert ds[0]["static_categorical_values"].shape == (
+        len(static_categorical_columns),
+    )
 
     # check that frequency token is present
     assert "freq_token" in ds[0]
@@ -277,7 +282,9 @@ def test_forecasting_df_dataset_stride(ts_data_with_categorical):
 
     # length check
     series_len = len(df) / len(df["id"].unique())
-    assert len(ds) == (((series_len - prediction_length - context_length) // stride) + 1) * len(df["id"].unique())
+    assert len(ds) == (
+        ((series_len - prediction_length - context_length) // stride) + 1
+    ) * len(df["id"].unique())
 
     # check proper windows are selected based on chosen stride
     ds_past_np = np.array([v["past_values"].numpy() for v in ds])
@@ -325,8 +332,12 @@ def test_forecasting_observed_mask(ts_data_with_categorical):
     assert ds[0]["future_observed_mask"].shape == ds[0]["future_values"].shape
 
     # Check mask is correct
-    np.testing.assert_allclose(ds[4]["future_observed_mask"], np.array([[True, True], [True, False]]))
-    np.testing.assert_allclose(ds[6]["past_observed_mask"][-1, :], np.array([True, False]))
+    np.testing.assert_allclose(
+        ds[4]["future_observed_mask"], np.array([[True, True], [True, False]])
+    )
+    np.testing.assert_allclose(
+        ds[6]["past_observed_mask"][-1, :], np.array([True, False])
+    )
 
     # Check mask value is correct
     ds[4]["future_values"][1, 1] == fill_value
@@ -369,7 +380,9 @@ def test_forecasting_imputation(ts_data_with_categorical):
     )
 
     past_values = ds[0]["past_values"].numpy()
-    np.testing.assert_allclose(past_values[1, 1], (past_values[0, 1] + past_values[2, 1]) / 2)
+    np.testing.assert_allclose(
+        past_values[1, 1], (past_values[0, 1] + past_values[2, 1]) / 2
+    )
     np.testing.assert_allclose(past_values[0, 0], past_values[1, 0])
 
     # forward fill
@@ -514,7 +527,9 @@ def test_classification_dataset_full_series(ts_data_nested):
 
 def test_datetime_handling(ts_data):
     df = ts_data.copy()
-    df["time_date_utc_offset"] = pd.date_range(start="2022-10-01 10:00:00 +01:00", periods=10, freq="h")
+    df["time_date_utc_offset"] = pd.date_range(
+        start="2022-10-01 10:00:00 +01:00", periods=10, freq="h"
+    )
 
     ds = ForecastDFDataset(
         df,
@@ -612,7 +627,9 @@ def test_imputation_forecasting_observed_masks(ts_data_with_categorical):
         artificial_missing_rate=0.9,
     )
 
-    np.testing.assert_allclose(ds.datasets[0]._artificial_past_observed_mask.mean(), 0.1, atol=0.01)
+    np.testing.assert_allclose(
+        ds.datasets[0]._artificial_past_observed_mask.mean(), 0.1, atol=0.01
+    )
 
     # check reproducibility
     ds = ImputeForecastDFDataset(
@@ -675,8 +692,15 @@ def test_imputation_forecasting_observed_masks(ts_data_with_categorical):
         random_seed=41,
     )
 
-    np.testing.assert_allclose(np.mean([dsi["artificial_past_observed_mask"].numpy()[:, 0].mean() for dsi in ds]), 1)
-    np.testing.assert_allclose(ds.datasets[0]._artificial_past_observed_mask.mean(), 0.5, atol=0.02)
+    np.testing.assert_allclose(
+        np.mean(
+            [dsi["artificial_past_observed_mask"].numpy()[:, 0].mean() for dsi in ds]
+        ),
+        1,
+    )
+    np.testing.assert_allclose(
+        ds.datasets[0]._artificial_past_observed_mask.mean(), 0.5, atol=0.02
+    )
 
     # check time t is missing
     ds = ImputeForecastDFDataset(
@@ -695,7 +719,8 @@ def test_imputation_forecasting_observed_masks(ts_data_with_categorical):
 
     assert np.all(
         [
-            dsi["artificial_past_observed_mask"].numpy()[-1, 1] == ~dsi["past_observed_mask"].numpy()[-1, 1]
+            dsi["artificial_past_observed_mask"].numpy()[-1, 1]
+            == ~dsi["past_observed_mask"].numpy()[-1, 1]
             for dsi in ds
         ]
     )

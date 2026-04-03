@@ -27,7 +27,6 @@ from .ftpayloads import TuneTypeEnum
 from .inference_payloads import ForecastingMetadataInput, ForecastingParameters
 from .tsfm_util import load_config, load_model, register_config
 
-
 LOGGER = logging.getLogger(__file__)
 
 
@@ -120,13 +119,22 @@ class TSFMForecastingTuningHandler:
             raise ex
 
         if self.handler_config.is_finetuned and preprocessor is None:
-            raise ValueError("Model indicates that it is finetuned but no preprocessor was found.")
+            raise ValueError(
+                "Model indicates that it is finetuned but no preprocessor was found."
+            )
 
         if not self.handler_config.is_finetuned and preprocessor is not None:
-            raise ValueError("Unexpected: model indicates that it is not finetuned but a preprocessor was found.")
+            raise ValueError(
+                "Unexpected: model indicates that it is not finetuned but a preprocessor was found."
+            )
 
         if preprocessor is None:
-            to_check = ["conditional_columns", "control_columns", "observable_columns", "static_categorical_columns"]
+            to_check = [
+                "conditional_columns",
+                "control_columns",
+                "observable_columns",
+                "static_categorical_columns",
+            ]
 
             for param in to_check:
                 if param in preprocessor_params and preprocessor_params[param]:
@@ -213,7 +221,9 @@ class TSFMForecastingTuningHandler:
         # we should properly set the prediction/context lengths in the preprocessor
         # we also need to make sure prediction_filter length is set in the model config
 
-        if parameters.fewshot_fraction_location not in [e.value for e in FractionLocation]:
+        if parameters.fewshot_fraction_location not in [
+            e.value for e in FractionLocation
+        ]:
             raise ValueError(
                 f"Received unknown location for fewshot_fraction_location {parameters.fewshot_fraction_location}"
             )
@@ -229,13 +239,17 @@ class TSFMForecastingTuningHandler:
                 )
             train_dataset = ForecastDFDataset(train_data, **dataset_spec)
             validation_dataset = (
-                ForecastDFDataset(validation_data, **dataset_spec) if validation_data else train_dataset
+                ForecastDFDataset(validation_data, **dataset_spec)
+                if validation_data
+                else train_dataset
             )
 
             # uniform case
             if parameters.fewshot_fraction_location == FractionLocation.UNIFORM.value:
                 lst = rng.integers(
-                    low=0, high=len(train_dataset), size=int(parameters.fewshot_fraction * len(train_dataset))
+                    low=0,
+                    high=len(train_dataset),
+                    size=int(parameters.fewshot_fraction * len(train_dataset)),
                 )
                 train_dataset = Subset(train_dataset, lst.tolist())
 
@@ -264,7 +278,8 @@ class TSFMForecastingTuningHandler:
             save_strategy="epoch",
             logging_strategy="epoch",
             save_total_limit=3,
-            logging_dir=training_tmp_dir / "logs",  # Make sure to specify a logging directory
+            logging_dir=training_tmp_dir
+            / "logs",  # Make sure to specify a logging directory
             load_best_model_at_end=True,  # Load the best model when training ends
             metric_for_best_model="eval_loss",  # Metric to monitor for early stopping
             greater_is_better=False,  # For loss
@@ -273,7 +288,11 @@ class TSFMForecastingTuningHandler:
         )
 
         callbacks = [
-            FileLoggingCallback(logs_filename=os.environ.get("TSFM_TRAINING_TRACKER_LOGFILE", "training_logs.jsonl"))
+            FileLoggingCallback(
+                logs_filename=os.environ.get(
+                    "TSFM_TRAINING_TRACKER_LOGFILE", "training_logs.jsonl"
+                )
+            )
         ]
         if parameters.trainer_args.early_stopping and validation_dataset:
             # Create the early stopping callback

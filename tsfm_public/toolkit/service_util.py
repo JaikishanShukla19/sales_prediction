@@ -10,7 +10,6 @@ from transformers import PreTrainedModel
 from .time_series_preprocessor import TimeSeriesPreprocessor
 from .tsfm_config import TSFMConfig
 
-
 # tuples of:
 # "inference_handler_module_path", "inference_handler_class_name",  "tuning_handler_module_path",  "tuning_handler_class_name")
 
@@ -71,7 +70,9 @@ def save_deployment_package(
     handler_params = service_handler_mapping.get(config_class, None)
 
     if handler_params is None:
-        raise ValueError(f"Could not find suitable handler information for config class {config_class}")
+        raise ValueError(
+            f"Could not find suitable handler information for config class {config_class}"
+        )
 
     (
         params["inference_handler_module_path"],
@@ -88,9 +89,15 @@ def save_deployment_package(
     params["is_finetuned"] = ts_processor is not None
 
     # assumes we are dealing with one of the known IBM models
-    params["minimum_context_length"] = kwargs.pop("minimum_context_length", model.config.context_length)
-    params["maximum_context_length"] = kwargs.pop("maximum_context_length", model.config.context_length)
-    params["maximum_prediction_length"] = kwargs.pop("maximum_prediction_length", model.config.prediction_length)
+    params["minimum_context_length"] = kwargs.pop(
+        "minimum_context_length", model.config.context_length
+    )
+    params["maximum_context_length"] = kwargs.pop(
+        "maximum_context_length", model.config.context_length
+    )
+    params["maximum_prediction_length"] = kwargs.pop(
+        "maximum_prediction_length", model.config.prediction_length
+    )
     params.update(**kwargs)
 
     svc_config = TSFMConfig(**params)

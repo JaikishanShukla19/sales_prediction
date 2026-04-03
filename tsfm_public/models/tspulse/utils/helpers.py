@@ -76,12 +76,16 @@ def patchwise_stitched_reconstruction(
         raise ValueError("No patches fall entirely within the reconstruction window.")
 
     # Step 1: Create expanded inputs → shape: [B * num_selected_patches, L, C]
-    past_values_expanded = past_values.unsqueeze(1).repeat(1, num_selected_patches, 1, 1)
+    past_values_expanded = past_values.unsqueeze(1).repeat(
+        1, num_selected_patches, 1, 1
+    )
     past_values_expanded = past_values_expanded.view(B * num_selected_patches, L, C)
 
     # Step 2: Create past_observed_mask: [B * num_selected_patches, L, C]
     past_observed_mask = torch.ones_like(past_values, dtype=torch.bool)
-    past_observed_mask = past_observed_mask.unsqueeze(1).repeat(1, num_selected_patches, 1, 1)
+    past_observed_mask = past_observed_mask.unsqueeze(1).repeat(
+        1, num_selected_patches, 1, 1
+    )
     past_observed_mask = past_observed_mask.view(B * num_selected_patches, L, C)
 
     patch_starts_selected = patch_starts[valid_mask]
@@ -98,18 +102,28 @@ def patchwise_stitched_reconstruction(
     )
 
     # Step 4: Prepare indices for patch extraction
-    indices = torch.arange(patch_size, device=device).unsqueeze(0) + patch_starts_selected.view(-1, 1)
-    indices_expanded = indices.unsqueeze(-1).expand(-1, -1, C)  # [num_selected_patches, patch_size, C]
-    indices_expanded = indices_expanded.repeat(B, 1, 1)  # [B * num_selected_patches, patch_size, C]
+    indices = torch.arange(patch_size, device=device).unsqueeze(
+        0
+    ) + patch_starts_selected.view(-1, 1)
+    indices_expanded = indices.unsqueeze(-1).expand(
+        -1, -1, C
+    )  # [num_selected_patches, patch_size, C]
+    indices_expanded = indices_expanded.repeat(
+        B, 1, 1
+    )  # [B * num_selected_patches, patch_size, C]
 
     # Step 5: Initialize result dict
-    result_dict = {key: torch.full_like(past_values, float("nan")) for key in keys_to_stitch}
+    result_dict = {
+        key: torch.full_like(past_values, float("nan")) for key in keys_to_stitch
+    }
     patch_outputs = {}
 
     # Step 6: Stitch keys
     for key in keys_to_stitch:
         output = model_outputs[key]  # [B * num_selected_patches, L, C]
-        patches = torch.gather(output, dim=1, index=indices_expanded)  # [B * num_selected_patches, patch_size, C]
+        patches = torch.gather(
+            output, dim=1, index=indices_expanded
+        )  # [B * num_selected_patches, patch_size, C]
         patches = patches.view(B, num_selected_patches, patch_size, C)
 
         for i, start in enumerate(patch_starts_selected):
@@ -136,7 +150,9 @@ def patchwise_stitched_reconstruction(
 
 
 class PatchMaskingDatasetWrapper(Dataset):
-    def __init__(self, base_dataset, window_length, patch_length, window_position="first"):
+    def __init__(
+        self, base_dataset, window_length, patch_length, window_position="first"
+    ):
         """
         A dataset wrapper for fine-tuning TSPulse on time-series anomaly detection (AD) tasks
         using patch-level masking.
@@ -245,7 +261,9 @@ def get_embeddings(
 
         embeddings = embeddings["decoder_hidden_state"]  # [B, C, D]
     else:
-        raise ValueError(f"Invalid component: {component}. Choose 'backbone' or 'decoder'.")
+        raise ValueError(
+            f"Invalid component: {component}. Choose 'backbone' or 'decoder'."
+        )
 
     time_emb_size = fft_emb_size = (num_patches // 2) * d_model
     reg_emb_size = num_reg_tokens * d_model
@@ -259,4 +277,6 @@ def get_embeddings(
     elif mode == "full":
         return embeddings
     else:
-        raise ValueError(f"Invalid mode: {mode}. Choose from 'time', 'fft', 'register', 'full'.")
+        raise ValueError(
+            f"Invalid mode: {mode}. Choose from 'time', 'fft', 'register', 'full'."
+        )

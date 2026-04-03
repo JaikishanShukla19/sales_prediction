@@ -12,7 +12,10 @@ import pandas as pd
 import pytest
 import torch
 
-from tsfm_public.models.tinytimemixer import TinyTimeMixerConfig, TinyTimeMixerForPrediction
+from tsfm_public.models.tinytimemixer import (
+    TinyTimeMixerConfig,
+    TinyTimeMixerForPrediction,
+)
 from tsfm_public.toolkit.conformal import (
     AdaptiveWeightedConformalScoreWrapper,
     NonconformityScores,
@@ -21,11 +24,17 @@ from tsfm_public.toolkit.conformal import (
     PostHocProbabilisticProcessor,
     WeightedConformalForecasterWrapper,
 )
-from tsfm_public.toolkit.time_series_forecasting_pipeline import TimeSeriesForecastingPipeline
+from tsfm_public.toolkit.time_series_forecasting_pipeline import (
+    TimeSeriesForecastingPipeline,
+)
 
 
 @pytest.mark.parametrize(
-    "method", [PostHocProbabilisticMethod.CONFORMAL.value, PostHocProbabilisticMethod.GAUSSIAN.value]
+    "method",
+    [
+        PostHocProbabilisticMethod.CONFORMAL.value,
+        PostHocProbabilisticMethod.GAUSSIAN.value,
+    ],
 )
 def test_conformal_save_pretrained(method):
     # initial test to check that we save the ProbabbilisticProcessor as intended
@@ -61,15 +70,24 @@ def test_posthoc_probabilistic_processor():
     y_test_pred = y_pred[-10:]
     # y_test_gt = y_gt[-10:]
 
-    for method in [PostHocProbabilisticMethod.GAUSSIAN.value, PostHocProbabilisticMethod.CONFORMAL.value]:
+    for method in [
+        PostHocProbabilisticMethod.GAUSSIAN.value,
+        PostHocProbabilisticMethod.CONFORMAL.value,
+    ]:
         if method == PostHocProbabilisticMethod.CONFORMAL.value:
-            nonconformity_score_list = [NonconformityScores.ABSOLUTE_ERROR.value, NonconformityScores.ERROR.value]
+            nonconformity_score_list = [
+                NonconformityScores.ABSOLUTE_ERROR.value,
+                NonconformityScores.ERROR.value,
+            ]
         else:
             nonconformity_score_list = [NonconformityScores.ABSOLUTE_ERROR.value]
         for nonconformity_score in nonconformity_score_list:
             # print(method,nonconformity_score )
             p = PostHocProbabilisticProcessor(
-                window_size=window_size, quantiles=quantiles, nonconformity_score=nonconformity_score, method=method
+                window_size=window_size,
+                quantiles=quantiles,
+                nonconformity_score=nonconformity_score,
+                method=method,
             )
             p.train(y_cal_gt=y_cal_gt, y_cal_pred=y_cal_pred)
             y_test_prob_pred = p.predict(y_test_pred)
@@ -137,10 +155,14 @@ def test_posthoc_probabilistic_processor():
             # Monotonicity check across quantiles
             assert np.all(
                 y_test_prob_pred[..., 0] <= y_test_prob_pred[..., 1]
-            ), "Quantile 0.1 is not <= 0.5 for method {} nonconformity score {}".format(method, nonconformity_score)
+            ), "Quantile 0.1 is not <= 0.5 for method {} nonconformity score {}".format(
+                method, nonconformity_score
+            )
             assert np.all(
                 y_test_prob_pred[..., 1] <= y_test_prob_pred[..., 2]
-            ), "Quantile 0.5 is not <= 0.9 for method {} nonconformity score {}".format(method, nonconformity_score)
+            ), "Quantile 0.5 is not <= 0.9 for method {} nonconformity score {}".format(
+                method, nonconformity_score
+            )
 
 
 def test_posthoc_probabilistic_processor_online_update():
@@ -184,11 +206,17 @@ def test_posthoc_probabilistic_processor_online_update():
     2. Run Methods with updates
     """
     nonconformity_score_list = [NonconformityScores.ABSOLUTE_ERROR.value]
-    method_list = [PostHocProbabilisticMethod.CONFORMAL.value, PostHocProbabilisticMethod.GAUSSIAN.value]
+    method_list = [
+        PostHocProbabilisticMethod.CONFORMAL.value,
+        PostHocProbabilisticMethod.GAUSSIAN.value,
+    ]
     for method in method_list:
         for nonconformity_score in nonconformity_score_list:
             p = PostHocProbabilisticProcessor(
-                window_size=window_size, quantiles=quantiles, nonconformity_score=nonconformity_score, method=method
+                window_size=window_size,
+                quantiles=quantiles,
+                nonconformity_score=nonconformity_score,
+                method=method,
             )
 
             ### 2. Fit
@@ -203,7 +231,9 @@ def test_posthoc_probabilistic_processor_online_update():
                 # 4.1 Predict
                 y_test_prob_pred_online.append(p.predict(y_test_pred[i : i + 1, ...]))
                 # 4.2 Update (assume we observed the sample)
-                p.update(y_gt=y_test_gt[i : i + 1, ...], y_pred=y_test_pred[i : i + 1, ...])
+                p.update(
+                    y_gt=y_test_gt[i : i + 1, ...], y_pred=y_test_pred[i : i + 1, ...]
+                )
 
             y_test_prob_pred_online = np.stack(y_test_prob_pred_online)
             y_test_prob_pred_online = y_test_prob_pred_online.reshape(
@@ -294,7 +324,9 @@ def test_posthoc_probabilistic_processor_outlier_score():
     signal = trend + baseline + noise
 
     # Inject only point anomalies
-    anomaly_indices = np.random.choice(np.arange(window_size_min, n), size=size, replace=False)
+    anomaly_indices = np.random.choice(
+        np.arange(window_size_min, n), size=size, replace=False
+    )
     anomaly_magnitudes = 1.5
     anomaly_signs = np.random.choice([-1, 1], size=size)
     signal[anomaly_indices] += anomaly_magnitudes * anomaly_signs
@@ -312,7 +344,9 @@ def test_posthoc_probabilistic_processor_outlier_score():
     y_pred_naive = y_pred_naive[..., np.newaxis]  # added feature dimension
 
     # Ground truth for evaluation
-    y_true = np.array([signal[t + 1 : t + 1 + horizon] for t in range(n_forecast)])  # (n_forecast, horizon)
+    y_true = np.array(
+        [signal[t + 1 : t + 1 + horizon] for t in range(n_forecast)]
+    )  # (n_forecast, horizon)
     y_true = y_true[..., np.newaxis]  # added feature dimension
 
     # Cal/Test Splits
@@ -332,7 +366,10 @@ def test_posthoc_probabilistic_processor_outlier_score():
     for method in method_list:
         for nonconformity_score in nonconformity_score_list:
             p = PostHocProbabilisticProcessor(
-                window_size=window_size, quantiles=quantiles, nonconformity_score=nonconformity_score, method=method
+                window_size=window_size,
+                quantiles=quantiles,
+                nonconformity_score=nonconformity_score,
+                method=method,
             )
 
             ### 2. Fit
@@ -342,7 +379,10 @@ def test_posthoc_probabilistic_processor_outlier_score():
                 # print('AGGREGATION ', aggregation)
                 ### 3. Outlier
                 output_outlier = p.outlier_score(
-                    y_pred=y_test_pred, y_gt=y_test_gt, significance=alarm_rate, aggregation=aggregation
+                    y_pred=y_test_pred,
+                    y_gt=y_test_gt,
+                    significance=alarm_rate,
+                    aggregation=aggregation,
                 )
 
                 labels_test = labels[-output_outlier.shape[0] :]
@@ -357,13 +397,10 @@ def test_posthoc_probabilistic_processor_outlier_score():
                 ), "Unexpected output type from outlier_score(), it should be np array for method {} nonconformity score {} on aggregation {}".format(
                     method, nonconformity_score, aggregation
                 )
-                assert (
-                    output_outlier.shape
-                    == (
-                        y_test_pred.shape[0],
-                        y_test_pred.shape[2],
-                        2,
-                    )
+                assert output_outlier.shape == (
+                    y_test_pred.shape[0],
+                    y_test_pred.shape[2],
+                    2,
                 ), "Unexpected output shape from predict() for method {} nonconformity score {} on aggregation {}".format(
                     method, nonconformity_score, aggregation
                 )
@@ -372,7 +409,8 @@ def test_posthoc_probabilistic_processor_outlier_score():
 
                 # highest p-value for predicted outliers is below the alarm rate
                 assert (
-                    np.max(p_value_scores_test[labels_prediction_test == 1]) <= alarm_rate
+                    np.max(p_value_scores_test[labels_prediction_test == 1])
+                    <= alarm_rate
                 ), "Max p value among predicted outliers exceeds alarm rate for method {} nonconformity score {} on aggregation {}".format(
                     method, nonconformity_score, aggregation
                 )
@@ -426,7 +464,9 @@ def test_adaptive_conformal_wrapper():
     }
 
     TSAD_class = AdaptiveWeightedConformalScoreWrapper(
-        false_alarm=false_alarm, window_size=window_size, weighting_params=weighting_params
+        false_alarm=false_alarm,
+        window_size=window_size,
+        weighting_params=weighting_params,
     )
 
     ## Assertions Initialization
@@ -437,7 +477,9 @@ def test_adaptive_conformal_wrapper():
         TSAD_class.window_size == window_size
     ), f"Expected window_size={window_size}, but got {TSAD_class.window_size}"
     for key in weighting_params.keys():
-        assert key in TSAD_class.weighting_params, f"Key '{key}' not found in TSAD_class.weighting_params"
+        assert (
+            key in TSAD_class.weighting_params
+        ), f"Key '{key}' not found in TSAD_class.weighting_params"
         assert (
             TSAD_class.weighting_params[key] == weighting_params[key]
         ), f"Mismatch for key '{key}' in TSAD_class.weighting_params : expected {weighting_params[key]}, got {TSAD_class.weighting_params[key]}"
@@ -480,13 +522,25 @@ def test_forecast_horizon_aggregation():
     window_size = 100
     quantiles = [0.5]
     p = PostHocProbabilisticProcessor(
-        window_size=window_size, quantiles=quantiles, nonconformity_score=nonconformity_score, method=method
+        window_size=window_size,
+        quantiles=quantiles,
+        nonconformity_score=nonconformity_score,
+        method=method,
     )
     ### Test 2
-    outliers_scores_p = np.array([[0.1, 0.01, 0.001], [0.1, 0.01, 0.005], [0.1, 0.05, 0.0001], [0.5, 0.01, 0.0001]])[
+    outliers_scores_p = np.array(
+        [
+            [0.1, 0.01, 0.001],
+            [0.1, 0.01, 0.005],
+            [0.1, 0.05, 0.0001],
+            [0.5, 0.01, 0.0001],
+        ]
+    )[
         :, :, np.newaxis
     ]  # feature 0
-    outliers_scores_ix = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5, 6]])[:, :, np.newaxis]  # feature 1
+    outliers_scores_ix = np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5], [4, 5, 6]])[
+        :, :, np.newaxis
+    ]  # feature 1
     outliers_scores = np.concatenate([outliers_scores_p, outliers_scores_ix], axis=-1)
 
     expected_aggregation_ix = np.array([[1], [2], [3], [4]])
@@ -500,7 +554,12 @@ def test_forecast_horizon_aggregation():
     expected_aggregation["median"] = np.concatenate(
         [
             np.array(
-                [[0.1], [np.median([0.1, 0.01])], [np.median([0.1, 0.01, 0.001])], [np.median([0.5, 0.05, 0.005])]]
+                [
+                    [0.1],
+                    [np.median([0.1, 0.01])],
+                    [np.median([0.1, 0.01, 0.001])],
+                    [np.median([0.5, 0.05, 0.005])],
+                ]
             ),
             expected_aggregation_ix,
         ],
@@ -508,7 +567,14 @@ def test_forecast_horizon_aggregation():
     )
     expected_aggregation["mean"] = np.concatenate(
         [
-            np.array([[0.1], [np.mean([0.1, 0.01])], [np.mean([0.1, 0.01, 0.001])], [np.mean([0.5, 0.05, 0.005])]]),
+            np.array(
+                [
+                    [0.1],
+                    [np.mean([0.1, 0.01])],
+                    [np.mean([0.1, 0.01, 0.001])],
+                    [np.mean([0.5, 0.05, 0.005])],
+                ]
+            ),
             expected_aggregation_ix,
         ],
         axis=-1,
@@ -523,23 +589,30 @@ def test_forecast_horizon_aggregation():
         [np.array([[0.1], [0.01], [0.001], [0.005]]), expected_aggregation_ix], axis=-1
     )
     for aggregation in ["min", "mean", "max", "median", 0, 1, 2]:
-        outliers_aggregated = p.forecast_horizon_aggregation(outliers_scores, aggregation=aggregation)
+        outliers_aggregated = p.forecast_horizon_aggregation(
+            outliers_scores, aggregation=aggregation
+        )
         # print(aggregation)
         # print(outliers_aggregated)
         # print(expected_aggregation[aggregation])
         # print()
-        assert (
-            outliers_aggregated.shape == (outliers_scores.shape[0], outliers_scores.shape[-1])
+        assert outliers_aggregated.shape == (
+            outliers_scores.shape[0],
+            outliers_scores.shape[-1],
         ), f"forecast_horizon_aggregation should provide an output of shape {(outliers_scores.shape[0], outliers_scores.shape[-1])}"
         assert (
-            np.mean(np.abs(outliers_aggregated - expected_aggregation[aggregation])) == 0
+            np.mean(np.abs(outliers_aggregated - expected_aggregation[aggregation]))
+            == 0
         ), f"Expected forecast_horizon_aggregation for aggregation {aggregation} did not match the expected values"
 
     ### Test 3
     window_size = 20
     quantiles = [0.1]
     p = PostHocProbabilisticProcessor(
-        window_size=window_size, quantiles=quantiles, nonconformity_score=nonconformity_score, method=method
+        window_size=window_size,
+        quantiles=quantiles,
+        nonconformity_score=nonconformity_score,
+        method=method,
     )
 
     y_cal_gt = np.linspace(0, 2, 21)[1:-1] - 1
@@ -557,11 +630,17 @@ def test_forecast_horizon_aggregation():
     y_test_gt = np.array(
         [
             [0.7, 0.9, 0.8],  # not an outlier
-            [0.5, 0.7, 0.9],  # outlier for h=1 and h=2 (cause no pred of h=2 is available so using h=1)
+            [
+                0.5,
+                0.7,
+                0.9,
+            ],  # outlier for h=1 and h=2 (cause no pred of h=2 is available so using h=1)
             [0.5, 0.7, 0.9],  # No outlier
             [0.5, 1.0, 1.0],
         ]
-    )[..., np.newaxis] * np.ones([1, 1, 4])  # outlier for h=2
+    )[..., np.newaxis] * np.ones(
+        [1, 1, 4]
+    )  # outlier for h=2
     y_test_pred = np.zeros_like(y_test_gt)
     significance = 0.1
 
@@ -575,7 +654,10 @@ def test_forecast_horizon_aggregation():
     ### Outliers count
     for aggregation in outlier_gt.keys():
         output_outlier = p.outlier_score(
-            y_pred=y_test_pred, y_gt=y_test_gt, significance=significance, aggregation=aggregation
+            y_pred=y_test_pred,
+            y_gt=y_test_gt,
+            significance=significance,
+            aggregation=aggregation,
         )
         assert (
             np.sum(output_outlier[..., 1]) == outlier_gt[aggregation]
@@ -586,21 +668,31 @@ def example_dataset():
     n_variables: int = 2
     target_variables = [f"X{i + 1}" for i in range(n_variables)]
     data = np.array(
-        [np.convolve(np.random.normal(0, 1, 1000), np.ones(15) / 15, "same") for _ in range(n_variables)]
+        [
+            np.convolve(np.random.normal(0, 1, 1000), np.ones(15) / 15, "same")
+            for _ in range(n_variables)
+        ]
     ).T
-    timestamp = pd.date_range("2021-01-01", periods=len(data), freq=pd.Timedelta(5, "minute"))
+    timestamp = pd.date_range(
+        "2021-01-01", periods=len(data), freq=pd.Timedelta(5, "minute")
+    )
     df = pd.DataFrame(data, columns=target_variables)
     df["timestamp"] = timestamp
     return target_variables, df
 
 
-@pytest.mark.parametrize("id_columns,input_type", itertools.product(["single", "multiple"], ["ndarray", "dataframe"]))
+@pytest.mark.parametrize(
+    "id_columns,input_type",
+    itertools.product(["single", "multiple"], ["ndarray", "dataframe"]),
+)
 def test_posthoc_probabilistic_processor_with_id_columns(id_columns, input_type):
     target_variables, dataset = example_dataset()
     forecast_horizon = 30
     model = TinyTimeMixerForPrediction(
         TinyTimeMixerConfig(
-            context_length=120, prediction_length=forecast_horizon, num_input_channels=len(target_variables)
+            context_length=120,
+            prediction_length=forecast_horizon,
+            num_input_channels=len(target_variables),
         )
     )
 
@@ -609,11 +701,17 @@ def test_posthoc_probabilistic_processor_with_id_columns(id_columns, input_type)
     elif id_columns == "multiple":
         id_columns = ["id_column", "id_column2"]
 
-    dataset[id_columns[0]] = [1 if x < len(dataset) / 2 else 2 for x in range(len(dataset))]
+    dataset[id_columns[0]] = [
+        1 if x < len(dataset) / 2 else 2 for x in range(len(dataset))
+    ]
     for col in id_columns[1:]:
         dataset[col] = dataset[id_columns[0]].astype(str)
     fpipe = TimeSeriesForecastingPipeline(
-        model, timestamp_column="timestamp", id_columns=id_columns, target_columns=target_variables, device="cpu"
+        model,
+        timestamp_column="timestamp",
+        id_columns=id_columns,
+        target_columns=target_variables,
+        device="cpu",
     )
     forecasts = fpipe(dataset)
 
@@ -651,9 +749,15 @@ def test_posthoc_probabilistic_processor_with_id_columns(id_columns, input_type)
     y_test_pred = y_pred.loc[sel_idx]
     id_columns_test = forecasts[id_columns].copy().loc[sel_idx].values
 
-    for method in [PostHocProbabilisticMethod.GAUSSIAN.value, PostHocProbabilisticMethod.CONFORMAL.value]:
+    for method in [
+        PostHocProbabilisticMethod.GAUSSIAN.value,
+        PostHocProbabilisticMethod.CONFORMAL.value,
+    ]:
         if method == PostHocProbabilisticMethod.CONFORMAL.value:
-            nonconformity_score_list = [NonconformityScores.ABSOLUTE_ERROR.value, NonconformityScores.ERROR.value]
+            nonconformity_score_list = [
+                NonconformityScores.ABSOLUTE_ERROR.value,
+                NonconformityScores.ERROR.value,
+            ]
         else:
             nonconformity_score_list = [NonconformityScores.ABSOLUTE_ERROR.value]
         for nonconformity_score in nonconformity_score_list:
@@ -667,8 +771,12 @@ def test_posthoc_probabilistic_processor_with_id_columns(id_columns, input_type)
                     nonconformity_score=nonconformity_score,
                     method=method,
                 )
-                p.train(y_cal_gt=y_cal_gt, y_cal_pred=y_cal_pred)  # , id_column_values=id_columns_cal)
-                y_test_prob_pred = p.predict(y_test_pred)  #  id_column_values=id_columns_test)
+                p.train(
+                    y_cal_gt=y_cal_gt, y_cal_pred=y_cal_pred
+                )  # , id_column_values=id_columns_cal)
+                y_test_prob_pred = p.predict(
+                    y_test_pred
+                )  #  id_column_values=id_columns_test)
             elif input_type == "ndarray":
                 p = PostHocProbabilisticProcessor(
                     window_size=window_size,
@@ -678,7 +786,9 @@ def test_posthoc_probabilistic_processor_with_id_columns(id_columns, input_type)
                 )
                 p.train(
                     y_cal_gt=p._get_numpy_input(y_cal_gt[["X1", "X2"]]),
-                    y_cal_pred=p._get_numpy_input(y_cal_pred[["X1_prediction", "X2_prediction"]]),
+                    y_cal_pred=p._get_numpy_input(
+                        y_cal_pred[["X1_prediction", "X2_prediction"]]
+                    ),
                     id_column_values=id_columns_cal,
                 )
                 y_test_prob_pred = p.predict(
@@ -751,10 +861,14 @@ def test_posthoc_probabilistic_processor_with_id_columns(id_columns, input_type)
             # Monotonicity check across quantiles
             assert np.all(
                 y_test_prob_pred[..., 0] <= y_test_prob_pred[..., 1]
-            ), "Quantile 0.1 is not <= 0.5 for method {} nonconformity score {}".format(method, nonconformity_score)
+            ), "Quantile 0.1 is not <= 0.5 for method {} nonconformity score {}".format(
+                method, nonconformity_score
+            )
             assert np.all(
                 y_test_prob_pred[..., 1] <= y_test_prob_pred[..., 2]
-            ), "Quantile 0.5 is not <= 0.9 for method {} nonconformity score {}".format(method, nonconformity_score)
+            ), "Quantile 0.5 is not <= 0.9 for method {} nonconformity score {}".format(
+                method, nonconformity_score
+            )
 
             # save / load
             with tempfile.TemporaryDirectory() as d:

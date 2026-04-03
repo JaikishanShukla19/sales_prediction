@@ -32,9 +32,9 @@ def test_standard_scaler(sample_data):
     # check shape preserved
     result = scaler.fit_transform(sample_data[columns])
     assert result.shape == sample_data[columns].shape
-    expected = (sample_data[columns].values - np.mean(sample_data[columns].values, axis=0)) / np.std(
-        sample_data[columns].values, axis=0
-    )
+    expected = (
+        sample_data[columns].values - np.mean(sample_data[columns].values, axis=0)
+    ) / np.std(sample_data[columns].values, axis=0)
     np.testing.assert_allclose(result, expected)
 
     # check serialization
@@ -124,8 +124,15 @@ def test_time_series_preprocessor_scales(ts_data):
 
     # check scaled result
     out = tsp.preprocess(df)
-    assert np.allclose(out.groupby(tsp.id_columns)[tsp.target_columns].apply(lambda x: np.mean(x)), 0.0)
-    assert np.allclose(out.groupby(tsp.id_columns)[tsp.target_columns].apply(lambda x: np.std(x, axis=0)), 1.0)
+    assert np.allclose(
+        out.groupby(tsp.id_columns)[tsp.target_columns].apply(lambda x: np.mean(x)), 0.0
+    )
+    assert np.allclose(
+        out.groupby(tsp.id_columns)[tsp.target_columns].apply(
+            lambda x: np.std(x, axis=0)
+        ),
+        1.0,
+    )
 
     # check inverse scale result
     out_inv = tsp.inverse_scale_targets(out)
@@ -134,15 +141,21 @@ def test_time_series_preprocessor_scales(ts_data):
         == df.groupby(tsp.id_columns)[tsp.target_columns].apply(lambda x: np.mean(x))
     )
     assert np.all(
-        out_inv.groupby(tsp.id_columns)[tsp.target_columns].apply(lambda x: np.std(x, axis=0))
-        == df.groupby(tsp.id_columns)[tsp.target_columns].apply(lambda x: np.std(x, axis=0))
+        out_inv.groupby(tsp.id_columns)[tsp.target_columns].apply(
+            lambda x: np.std(x, axis=0)
+        )
+        == df.groupby(tsp.id_columns)[tsp.target_columns].apply(
+            lambda x: np.std(x, axis=0)
+        )
     )
 
     # check inverse scale result, with suffix
 
     suffix = "_foo"
     targets_suffix = [f"{c}{suffix}" for c in tsp.target_columns]
-    out.columns = [f"{c}{suffix}" if c in tsp.target_columns else c for c in out.columns]
+    out.columns = [
+        f"{c}{suffix}" if c in tsp.target_columns else c for c in out.columns
+    ]
     out_inv = tsp.inverse_scale_targets(out, suffix=suffix)
     assert np.all(
         out_inv.groupby(tsp.id_columns)[targets_suffix].apply(lambda x: np.mean(x))
@@ -211,7 +224,9 @@ def test_time_series_preprocessor_power_inv_scales_lists(ts_data):
 
 def test_extend_time_series(ts_data):
     periods = 5
-    a = extend_time_series(ts_data, timestamp_column="timestamp", grouping_columns=["id"], periods=periods)
+    a = extend_time_series(
+        ts_data, timestamp_column="timestamp", grouping_columns=["id"], periods=periods
+    )
 
     # check that length increases by periods for each id
     assert a.shape[0] == ts_data.shape[0] + 3 * periods
@@ -234,13 +249,19 @@ def test_extend_time_series(ts_data):
     ts_data_2 = pd.DataFrame(
         {
             "id": list(nreps(["A", "B"], 50)) + ["C"] * 20,
-            "timestamp": [datetime(2021, 1, 1) + timedelta(days=i) for i in range(50)] * 2
+            "timestamp": [datetime(2021, 1, 1) + timedelta(days=i) for i in range(50)]
+            * 2
             + [datetime(2021, 1, 1) + timedelta(days=i) for i in range(20)],
             "value1": range(120),
         }
     )
 
-    a = extend_time_series(ts_data_2, timestamp_column="timestamp", grouping_columns=["id"], total_periods=60)
+    a = extend_time_series(
+        ts_data_2,
+        timestamp_column="timestamp",
+        grouping_columns=["id"],
+        total_periods=60,
+    )
 
     assert len(a) == 180
 
@@ -250,7 +271,9 @@ def test_create_timestamps():
     base_timedelta = timedelta(days=1)
     base_timedelta_strs = ["1d", "1 days 00:00:00", "24h"]
     num_periods = 4
-    base_expected = [base_last_timestamp + base_timedelta * i for i in range(1, num_periods + 1)]
+    base_expected = [
+        base_last_timestamp + base_timedelta * i for i in range(1, num_periods + 1)
+    ]
 
     date_types = [datetime, pd.Timestamp, np.datetime64]
     timedelta_types = [timedelta, pd.Timedelta, np.timedelta64]
@@ -260,14 +283,21 @@ def test_create_timestamps():
         for timedelta_type in timedelta_types:
             test_cases.append(
                 {
-                    "last_timestamp": base_last_timestamp
-                    if isinstance(base_last_timestamp, date_type)
-                    else date_type(base_last_timestamp),
-                    "freq": base_timedelta
-                    if isinstance(base_timedelta, timedelta_type)
-                    else timedelta_type(base_timedelta),
+                    "last_timestamp": (
+                        base_last_timestamp
+                        if isinstance(base_last_timestamp, date_type)
+                        else date_type(base_last_timestamp)
+                    ),
+                    "freq": (
+                        base_timedelta
+                        if isinstance(base_timedelta, timedelta_type)
+                        else timedelta_type(base_timedelta)
+                    ),
                     "periods": 4,
-                    "expected": [d if isinstance(d, date_type) else date_type(d) for d in base_expected],
+                    "expected": [
+                        d if isinstance(d, date_type) else date_type(d)
+                        for d in base_expected
+                    ],
                 }
             )
 
@@ -275,21 +305,41 @@ def test_create_timestamps():
         for freq in base_timedelta_strs:
             test_cases.append(
                 {
-                    "last_timestamp": base_last_timestamp
-                    if isinstance(base_last_timestamp, date_type)
-                    else date_type(base_last_timestamp),
+                    "last_timestamp": (
+                        base_last_timestamp
+                        if isinstance(base_last_timestamp, date_type)
+                        else date_type(base_last_timestamp)
+                    ),
                     "freq": freq,
                     "periods": 4,
-                    "expected": [d if isinstance(d, date_type) else date_type(d) for d in base_expected],
+                    "expected": [
+                        d if isinstance(d, date_type) else date_type(d)
+                        for d in base_expected
+                    ],
                 }
             )
 
     test_cases.extend(
         [
             {"last_timestamp": 100, "freq": 3, "periods": 2, "expected": [103, 106]},
-            {"last_timestamp": 100, "freq": 3.5, "periods": 2, "expected": [103.5, 107.0]},
-            {"last_timestamp": 100, "freq": "3.5", "periods": 2, "expected": [103.5, 107.0]},
-            {"last_timestamp": np.float32(100), "freq": "3.5", "periods": 2, "expected": [103.5, 107.0]},
+            {
+                "last_timestamp": 100,
+                "freq": 3.5,
+                "periods": 2,
+                "expected": [103.5, 107.0],
+            },
+            {
+                "last_timestamp": 100,
+                "freq": "3.5",
+                "periods": 2,
+                "expected": [103.5, 107.0],
+            },
+            {
+                "last_timestamp": np.float32(100),
+                "freq": "3.5",
+                "periods": 2,
+                "expected": [103.5, 107.0],
+            },
         ]
     )
 
@@ -381,7 +431,9 @@ def test_get_datasets(ts_data):
     )
 
     # 3 time series of length 50
-    assert len(train) == 3 * (int((1 / 3) * 50) - (tsp.context_length + tsp.prediction_length) + 1)
+    assert len(train) == 3 * (
+        int((1 / 3) * 50) - (tsp.context_length + tsp.prediction_length) + 1
+    )
 
     assert len(valid) == len(test)
 
@@ -391,14 +443,19 @@ def test_get_datasets(ts_data):
     num_ids = len(ts_data["id"].unique())
     # test stride
     train, valid, test = get_datasets(
-        tsp, ts_data, split_config={"train": [0, 1 / 3], "valid": [1 / 3, 2 / 3], "test": [2 / 3, 1]}, stride=stride
+        tsp,
+        ts_data,
+        split_config={"train": [0, 1 / 3], "valid": [1 / 3, 2 / 3], "test": [2 / 3, 1]},
+        stride=stride,
     )
 
     strided_lengths = [len(train), len(valid), len(test)]
 
     # x is full length under stride 1
     # x // 3 is full length for each ID, need to subtract one and then compute strided length per ID
-    assert [(((x // num_ids) - 1) // stride + 1) * num_ids for x in full_lengths] == strided_lengths
+    assert [
+        (((x // num_ids) - 1) // stride + 1) * num_ids for x in full_lengths
+    ] == strided_lengths
 
     # no id columns, so treat as one big time series
     tsp = TimeSeriesPreprocessor(
@@ -422,7 +479,10 @@ def test_get_datasets(ts_data):
 
     # new train length should be 20% of 100, minus the usual for context length and prediction length
     fewshot_train_size = (
-        int((100 - tsp.context_length) * 0.2) + tsp.context_length - (tsp.context_length + tsp.prediction_length) + 1
+        int((100 - tsp.context_length) * 0.2)
+        + tsp.context_length
+        - (tsp.context_length + tsp.prediction_length)
+        + 1
     )
     assert len(train) == fewshot_train_size
 
@@ -471,11 +531,15 @@ def test_get_datasets(ts_data):
         },
     )
 
-    assert len(train) == int(150 * 0.7) - (tsp.context_length + tsp.prediction_length) + 1
+    assert (
+        len(train) == int(150 * 0.7) - (tsp.context_length + tsp.prediction_length) + 1
+    )
 
     assert len(test) == int(150 * 0.2) - tsp.prediction_length + 1
 
-    assert len(valid) == 150 - int(150 * 0.2) - int(150 * 0.7) - tsp.prediction_length + 1
+    assert (
+        len(valid) == 150 - int(150 * 0.2) - int(150 * 0.7) - tsp.prediction_length + 1
+    )
 
     full_train_size = len(train)
 
@@ -534,7 +598,11 @@ def test_get_datasets_padding(ts_data):
         train, valid, test = get_datasets(
             tsp,
             ts_data,
-            split_config={"train": [0, 1 / 3], "valid": [1 / 3, 2 / 3], "test": [2 / 3, 1]},
+            split_config={
+                "train": [0, 1 / 3],
+                "valid": [1 / 3, 2 / 3],
+                "test": [2 / 3, 1],
+            },
             enable_padding=False,
         )
 
@@ -596,9 +664,13 @@ def test_get_datasets_univariate(ts_data):
     )
 
     # for baseline
-    train_base, _, _ = get_datasets(tsp, ts_data, split_config={"train": 0.7, "test": 0.2})
+    train_base, _, _ = get_datasets(
+        tsp, ts_data, split_config={"train": 0.7, "test": 0.2}
+    )
 
-    train, _, _ = get_datasets(tsp, ts_data, split_config={"train": 0.7, "test": 0.2}, as_univariate=True)
+    train, _, _ = get_datasets(
+        tsp, ts_data, split_config={"train": 0.7, "test": 0.2}, as_univariate=True
+    )
 
     assert train[0]["id"][-1] == "value1"
     assert len(train) == 2 * len(train_base)
@@ -606,16 +678,22 @@ def test_get_datasets_univariate(ts_data):
 
 def test_get_datasets_with_frequency_token(ts_data):
     ts_data = ts_data.drop(columns=["id", "id2"])
-    tsp = TimeSeriesPreprocessor(timestamp_column="timestamp", prediction_length=2, context_length=5, freq="d")
+    tsp = TimeSeriesPreprocessor(
+        timestamp_column="timestamp", prediction_length=2, context_length=5, freq="d"
+    )
 
-    train, _, _ = get_datasets(tsp, ts_data, split_config={"train": 0.7, "test": 0.2}, use_frequency_token=True)
+    train, _, _ = get_datasets(
+        tsp, ts_data, split_config={"train": 0.7, "test": 0.2}, use_frequency_token=True
+    )
 
     assert train[0]["freq_token"] == DEFAULT_FREQUENCY_MAPPING["d"]
 
 
 def test_masking_specification(ts_data):
     ts_data = ts_data.drop(columns=["id", "id2"])
-    tsp = TimeSeriesPreprocessor(timestamp_column="timestamp", prediction_length=2, context_length=5, freq="d")
+    tsp = TimeSeriesPreprocessor(
+        timestamp_column="timestamp", prediction_length=2, context_length=5, freq="d"
+    )
 
     train, _, _ = get_datasets(
         tsp,
@@ -691,7 +769,9 @@ def test_id_columns_and_scaling_id_columns(ts_data_runs):
 def test_get_datasets_with_categoricical(ts_data):
     ts_data = ts_data.copy()
 
-    ts_data["varying_cat"] = ts_data.apply(lambda x: x["id"] + str(int(x["value1"] % 5)), axis=1)
+    ts_data["varying_cat"] = ts_data.apply(
+        lambda x: x["id"] + str(int(x["value1"] % 5)), axis=1
+    )
 
     tsp = TimeSeriesPreprocessor(
         timestamp_column="timestamp",
@@ -723,7 +803,9 @@ def test_get_datasets_with_categoricical(ts_data):
     # for baseline
     train, _, _ = get_datasets(tsp, ts_data, split_config={"train": 0.7, "test": 0.2})
     expected = np.array([0.0000, 0.7071, 1.4142, -1.4142, -0.7071])
-    np.testing.assert_allclose(train[2]["past_values"][:, 2].numpy(), expected, rtol=1e-4)
+    np.testing.assert_allclose(
+        train[2]["past_values"][:, 2].numpy(), expected, rtol=1e-4
+    )
 
 
 def test_time_series_preprocessor_serializes(ts_data_runs):
@@ -813,5 +895,7 @@ def test_time_series_preprocessor_serializes(ts_data_runs):
     with tempfile.TemporaryDirectory() as d:
         tsp.save_pretrained(d)
         new_tsp = TimeSeriesPreprocessor.from_pretrained(d)
-        assert len(new_tsp.target_scaler_dict.keys()) == len(tsp.target_scaler_dict.keys())
+        assert len(new_tsp.target_scaler_dict.keys()) == len(
+            tsp.target_scaler_dict.keys()
+        )
         assert len(new_tsp.target_scaler_dict.keys()) == 1

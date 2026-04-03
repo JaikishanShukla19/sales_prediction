@@ -15,7 +15,6 @@ from transformers.utils import add_end_docstrings, logging
 from .dataset import ClassificationDFDataset
 from .time_series_forecasting_pipeline import TimeSeriesPipeline
 
-
 # Eventually we should support all time series models
 # MODEL_FOR_TIME_SERIES_FORECASTING_MAPPING_NAMES = OrderedDict(
 #     [
@@ -30,7 +29,9 @@ logger = logging.get_logger(__name__)
 
 
 @add_end_docstrings(
-    build_pipeline_init_args(has_tokenizer=False, has_feature_extractor=True, has_image_processor=False)
+    build_pipeline_init_args(
+        has_tokenizer=False, has_feature_extractor=True, has_image_processor=False
+    )
 )
 class TimeSeriesClassificationPipeline(TimeSeriesPipeline):
     """
@@ -207,7 +208,9 @@ class TimeSeriesClassificationPipeline(TimeSeriesPipeline):
 
         return super().__call__(time_series, **kwargs)
 
-    def preprocess(self, time_series, **kwargs) -> Dict[str, Union[GenericTensor, List[Any]]]:
+    def preprocess(
+        self, time_series, **kwargs
+    ) -> Dict[str, Union[GenericTensor, List[Any]]]:
         """Preprocess step
         Load the data, if not already loaded, and then generate a pytorch dataset.
         """
@@ -298,7 +301,9 @@ class TimeSeriesClassificationPipeline(TimeSeriesPipeline):
         # inverse transform labels
         if self.feature_extractor is not None:
             out = self.feature_extractor.inverse_transform_labels(out)
-            out = self.feature_extractor.inverse_transform_labels(out, suffix="_prediction")
+            out = self.feature_extractor.inverse_transform_labels(
+                out, suffix="_prediction"
+            )
 
         self.__context_memory = {}
         return out

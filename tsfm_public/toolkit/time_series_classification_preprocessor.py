@@ -20,7 +20,6 @@ from .time_series_preprocessor import (
 )
 from .util import check_nested_lengths, is_nested_dataframe, join_list_without_repeat
 
-
 NESTED_ID_COLUMN = "__nested_series_id"
 
 
@@ -72,16 +71,22 @@ class TimeSeriesClassificationPreprocessor(TimeSeriesProcessorBase):
         # note base class __init__ method sets all arguments as attributes
 
         if not isinstance(id_columns, list):
-            raise ValueError(f"Invalid argument provided for `id_columns`: {id_columns}")
+            raise ValueError(
+                f"Invalid argument provided for `id_columns`: {id_columns}"
+            )
 
         if isinstance(timestamp_column, list):
-            raise ValueError(f"`timestamp_column` should not be a list, received: {timestamp_column}")
+            raise ValueError(
+                f"`timestamp_column` should not be a list, received: {timestamp_column}"
+            )
 
         if label_column is None:
             raise ValueError("`label_column` must be specified")
 
         if isinstance(label_column, list):
-            raise ValueError(f"`label_column` should not be a list, received: {label_column}")
+            raise ValueError(
+                f"`label_column` should not be a list, received: {label_column}"
+            )
 
         self.id_columns = id_columns
         self.timestamp_column = timestamp_column
@@ -100,7 +105,9 @@ class TimeSeriesClassificationPreprocessor(TimeSeriesProcessorBase):
         # check subset
         if scaling_id_columns is not None:
             if not set(scaling_id_columns).issubset(self.id_columns):
-                raise ValueError("`scaling_id_columns` must be a subset of `id_columns`")
+                raise ValueError(
+                    "`scaling_id_columns` must be a subset of `id_columns`"
+                )
             self.scaling_id_columns = scaling_id_columns
         else:
             self.scaling_id_columns = copy.copy(id_columns)
@@ -141,7 +148,9 @@ class TimeSeriesClassificationPreprocessor(TimeSeriesProcessorBase):
                 "A column name should appear only once in `input_columns` and `static_categorical_columns`."
             )
 
-    def _check_dataset(self, dataset: Union[Dataset, pd.DataFrame], check_nested: bool = True):
+    def _check_dataset(
+        self, dataset: Union[Dataset, pd.DataFrame], check_nested: bool = True
+    ):
         super()._check_dataset(dataset)
 
         if check_nested:
@@ -191,7 +200,10 @@ class TimeSeriesClassificationPreprocessor(TimeSeriesProcessorBase):
             )
 
         sizes = []
-        for feat, cats in zip(self.categorical_encoder.feature_names_in_, self.categorical_encoder.categories_):
+        for feat, cats in zip(
+            self.categorical_encoder.feature_names_in_,
+            self.categorical_encoder.categories_,
+        ):
             if feat in self.static_categorical_columns:
                 sizes.append(len(cats))
 
@@ -256,7 +268,9 @@ class TimeSeriesClassificationPreprocessor(TimeSeriesProcessorBase):
     def _process_label_encoding(self, df: pd.DataFrame):
         cols_to_encode = self.label_column
         if not self.label_encoder:
-            raise RuntimeError("Attempt to encode label column, but the encoder has not been trained yet.")
+            raise RuntimeError(
+                "Attempt to encode label column, but the encoder has not been trained yet."
+            )
         df[cols_to_encode] = self.label_encoder.transform(df[cols_to_encode])
         return df
 
@@ -293,15 +307,21 @@ class TimeSeriesClassificationPreprocessor(TimeSeriesProcessorBase):
 
                 if nested:
                     unnested = unnest_transform(df, columns=cols_to_scale)
-                    unnested[cols_to_scale] = self.scaler_dict[name].transform(unnested[cols_to_scale])
+                    unnested[cols_to_scale] = self.scaler_dict[name].transform(
+                        unnested[cols_to_scale]
+                    )
                     grp[cols_to_scale] = nest_transform(unnested, columns=cols_to_scale)
                 else:
-                    grp[cols_to_scale] = self.scaler_dict[name].transform(grp[cols_to_scale])
+                    grp[cols_to_scale] = self.scaler_dict[name].transform(
+                        grp[cols_to_scale]
+                    )
                 return grp
 
             if self.scaling_id_columns is not None and len(self.scaling_id_columns) > 0:
                 id_columns = (
-                    self.scaling_id_columns if len(self.scaling_id_columns) > 1 else self.scaling_id_columns[0]
+                    self.scaling_id_columns
+                    if len(self.scaling_id_columns) > 1
+                    else self.scaling_id_columns[0]
                 )
             else:
                 id_columns = INTERNAL_ID_COLUMN
@@ -314,7 +334,9 @@ class TimeSeriesClassificationPreprocessor(TimeSeriesProcessorBase):
         self._clean_up_dataframe(df)
         return df
 
-    def inverse_transform_labels(self, dataset: pd.DataFrame, suffix: Optional[str] = None) -> pd.DataFrame:
+    def inverse_transform_labels(
+        self, dataset: pd.DataFrame, suffix: Optional[str] = None
+    ) -> pd.DataFrame:
         """Inverse transform the labels back to their original values.
 
         Args:
@@ -330,7 +352,9 @@ class TimeSeriesClassificationPreprocessor(TimeSeriesProcessorBase):
         if suffix is not None:
             col_to_transform = f"{self.label_column}{suffix}"
 
-        df[col_to_transform] = self.label_encoder.inverse_transform(df[col_to_transform])
+        df[col_to_transform] = self.label_encoder.inverse_transform(
+            df[col_to_transform]
+        )
         self._clean_up_dataframe(df)
         return df
 

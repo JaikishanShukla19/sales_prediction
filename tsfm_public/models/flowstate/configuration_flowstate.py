@@ -7,7 +7,6 @@ from typing import List
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import logging
 
-
 logger = logging.get_logger(__name__)
 
 FLOWSTATE_PRETRAINED_CONFIG_ARCHIVE_MAP = {}
@@ -139,7 +138,10 @@ class FlowStateConfig(PretrainedConfig):
             self.out_gating = False
 
         # Check embedding parameters
-        if not hasattr(self, "embedding_feature_dim") or self.embedding_feature_dim <= 0:
+        if (
+            not hasattr(self, "embedding_feature_dim")
+            or self.embedding_feature_dim <= 0
+        ):
             raise ValueError("embedding_feature_dim must be provided and positive")
 
         # Check encoder parameters
@@ -147,26 +149,41 @@ class FlowStateConfig(PretrainedConfig):
             raise ValueError("encoder_num_layers must be provided and positive")
         if not hasattr(self, "encoder_state_dim") or self.encoder_state_dim <= 0:
             raise ValueError("encoder_state_dim must be provided and positive")
-        if not hasattr(self, "encoder_num_hippo_blocks") or self.encoder_num_hippo_blocks <= 0:
+        if (
+            not hasattr(self, "encoder_num_hippo_blocks")
+            or self.encoder_num_hippo_blocks <= 0
+        ):
             raise ValueError("encoder_num_hippo_blocks must be provided and positive")
         if not hasattr(self, "mlp_type"):
             self.trend_expert = "gated"
         if self.encoder_state_dim % self.encoder_num_hippo_blocks != 0:
-            raise ValueError("encoder_state_dim has to be divisible by encoder_num_hippo_blocks.")
+            raise ValueError(
+                "encoder_state_dim has to be divisible by encoder_num_hippo_blocks."
+            )
 
         # Check decoder parameters
         if not hasattr(self, "decoder_patch_len") or self.decoder_patch_len <= 0:
             raise ValueError("decoder_patch_len  must be provided and positive.")
         if not hasattr(self, "decoder_dim") or self.decoder_dim <= 0:
             raise ValueError("decoder_dim must be provided and positive")
-        if not hasattr(self, "decoder_type") or self.decoder_type not in ["legs", "hlegs", "four"]:
+        if not hasattr(self, "decoder_type") or self.decoder_type not in [
+            "legs",
+            "hlegs",
+            "four",
+        ]:
             raise ValueError(
                 f"decoder_type must be provided and one of `['legs', 'hlegs', 'four']`, but found {self.decoder_type}"
             )
 
         # Check loss paramter
-        if not hasattr(self, "quantiles") or min(self.quantiles) < 0.0 or max(self.quantiles) > 1.0:
-            raise ValueError("The values of quantiles must be provided and between [0, 1]")
+        if (
+            not hasattr(self, "quantiles")
+            or min(self.quantiles) < 0.0
+            or max(self.quantiles) > 1.0
+        ):
+            raise ValueError(
+                "The values of quantiles must be provided and between [0, 1]"
+            )
 
         if self.prediction_type == "quantile":
             logger.warning(
@@ -174,5 +191,10 @@ class FlowStateConfig(PretrainedConfig):
             )
             self.prediction_type = "mean"
 
-        if not hasattr(self, "prediction_type") or self.prediction_type not in ["mean", "median"]:
-            raise ValueError("Unknown prediction_type detected. Should be one of ['mean', 'median']")
+        if not hasattr(self, "prediction_type") or self.prediction_type not in [
+            "mean",
+            "median",
+        ]:
+            raise ValueError(
+                "Unknown prediction_type detected. Should be one of ['mean', 'median']"
+            )

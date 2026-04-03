@@ -21,7 +21,6 @@ from tsfm_public.toolkit.get_model import get_model
 from tsfm_public.toolkit.lr_finder import optimal_lr_finder
 from tsfm_public.toolkit.visualization import plot_predictions
 
-
 logger = logging.getLogger(__file__)
 
 # TTM pre-training example.
@@ -96,7 +95,9 @@ def pretrain(args, model, dset_train, dset_val):
         save_strategy="epoch",
         logging_strategy="epoch",
         save_total_limit=1,
-        logging_dir=os.path.join(args.save_dir, "logs"),  # Make sure to specify a logging directory
+        logging_dir=os.path.join(
+            args.save_dir, "logs"
+        ),  # Make sure to specify a logging directory
         load_best_model_at_end=True,  # Load the best model when training ends
         metric_for_best_model="eval_loss",  # Metric to monitor for early stopping
         greater_is_better=False,  # For loss
@@ -205,9 +206,7 @@ if __name__ == "__main__":
     # Data prep
     # Dataset
     TARGET_DATASET = "etth1"
-    dataset_path = (
-        "https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh1.csv"  # mention the dataset path
-    )
+    dataset_path = "https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh1.csv"  # mention the dataset path
     timestamp_column = "date"
     id_columns = []  # mention the ids that uniquely identify a time-series.
 

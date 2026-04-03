@@ -13,7 +13,6 @@ from tsfm_public.toolkit.hf_util import register_config
 
 from .version import __version__, __version_tuple__
 
-
 TSFM_PYTHON_LOGGING_LEVEL = os.getenv("TSFM_PYTHON_LOGGING_LEVEL", "INFO")
 
 LevelNamesMapping = {
@@ -46,10 +45,16 @@ logger = logging.getLogger(__name__)  # pylint: disable=invalid-name
 # Base objects, independent of any specific backend
 _import_structure = {
     "models": [],
-    "models.tinytimemixer": ["TINYTIMEMIXER_PRETRAINED_CONFIG_ARCHIVE_MAP", "TinyTimeMixerConfig"],
+    "models.tinytimemixer": [
+        "TINYTIMEMIXER_PRETRAINED_CONFIG_ARCHIVE_MAP",
+        "TinyTimeMixerConfig",
+    ],
     "models.tspulse": ["TINYTIMEMIXER_PRETRAINED_CONFIG_ARCHIVE_MAP", "TSPulseConfig"],
     "models.flowstate": ["FLOWSTATE_PRETRAINED_CONFIG_ARCHIVE_MAP", "FlowStateConfig"],
-    "models.patchtst_fm": ["PATCHTSTFM_PRETRAINED_CONFIG_ARCHIVE_MAP", "PatchTSTFMConfig"],
+    "models.patchtst_fm": [
+        "PATCHTSTFM_PRETRAINED_CONFIG_ARCHIVE_MAP",
+        "PatchTSTFMConfig",
+    ],
     "toolkit": [
         "TimeSeriesPreprocessor",
         "TimeSeriesForecastingPipeline",
@@ -177,5 +182,11 @@ else:
 
 
 # register local models now
-register_config(model_type="tinytimemixer", model_config_name="TinyTimeMixerConfig", module_path="tsfm_public")
-register_config(model_type="tspulse", model_config_name="TSPulseConfig", module_path="tsfm_public")
+register_config(
+    model_type="tinytimemixer",
+    model_config_name="TinyTimeMixerConfig",
+    module_path="tsfm_public",
+)
+register_config(
+    model_type="tspulse", model_config_name="TSPulseConfig", module_path="tsfm_public"
+)

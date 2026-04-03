@@ -22,7 +22,6 @@ from transformers import AutoConfig
 # First Party
 from tsfm_public import TinyTimeMixerConfig
 
-
 AutoConfig.register("tinytimemixer", TinyTimeMixerConfig)
 
 LOGGER = logging.getLogger(__file__)
@@ -88,7 +87,10 @@ def path_to_uri(path: Path, relative_ok: bool = True) -> str:
 
 
 def _to_pandas(
-    iscsv: bool, isfeather: bool, buf: Union[str, BytesIO, None] = None, timestamp_column: Union[str, None] = None
+    iscsv: bool,
+    isfeather: bool,
+    buf: Union[str, BytesIO, None] = None,
+    timestamp_column: Union[str, None] = None,
 ):
     if iscsv:
         if os.path.isdir(buf):
@@ -101,7 +103,9 @@ def _to_pandas(
             return dataset.to_table().to_pandas()
 
         else:
-            return pd.read_csv(buf, parse_dates=[timestamp_column] if timestamp_column else False)
+            return pd.read_csv(
+                buf, parse_dates=[timestamp_column] if timestamp_column else False
+            )
     if isfeather:
         return pd.read_feather(buf)
 
@@ -109,7 +113,11 @@ def _to_pandas(
 
 
 def _split_text_file(
-    source: str, target_dir: Union[str, Path], parts: int = 3, has_header: bool = True, shuffle: bool = True
+    source: str,
+    target_dir: Union[str, Path],
+    parts: int = 3,
+    has_header: bool = True,
+    shuffle: bool = True,
 ):
     """Utility for spliting a text file into multiple parts. This is mostly for facilitating data prep
     for test cases involving multiple file input.
@@ -133,13 +141,20 @@ def _split_text_file(
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
     extension = source[-4:]
-    filenames = [f"{os.path.basename(source).replace(extension, '')}.part_{x}{extension}" for x in range(parts)]
+    filenames = [
+        f"{os.path.basename(source).replace(extension, '')}.part_{x}{extension}"
+        for x in range(parts)
+    ]
     filenames = [(Path(target_dir) / fn).as_posix() for fn in filenames]
 
     for idx, filename in enumerate(filenames):
         with open(filename, "w") as acsvfile:
             start = idx * splitindex
-            end = start + splitindex if idx < parts - 1 else start + splitindex + remainder
+            end = (
+                start + splitindex
+                if idx < parts - 1
+                else start + splitindex + remainder
+            )
             if header:
                 acsvfile.write(header)
             acsvfile.writelines(lines[start:end])
@@ -174,7 +189,9 @@ def _isfeather(uri):
 
 def _readcsv(buf: BytesIO, timestamp_column):
     try:
-        return pd.read_csv(buf, parse_dates=[timestamp_column] if timestamp_column else False)
+        return pd.read_csv(
+            buf, parse_dates=[timestamp_column] if timestamp_column else False
+        )
     except Exception as _:
         buf.seek(0)
         return None
@@ -220,9 +237,16 @@ def to_pandas(uri: str, **kwargs) -> pd.DataFrame:
         LOGGER.info(f"Loading data from file uri: {uri}")
         if not os.path.exists(thepath):
             raise ValueError(f"{thepath} does not exist, resolved from uri {uri}.")
-        return _to_pandas(iscsv=_iscsv(uri), isfeather=_isfeather(uri), buf=thepath, timestamp_column=timestamp_column)
+        return _to_pandas(
+            iscsv=_iscsv(uri),
+            isfeather=_isfeather(uri),
+            buf=thepath,
+            timestamp_column=timestamp_column,
+        )
     if os.path.exists(uri):
-        raise NotImplementedError(f"{uri} is not a proper URI. Absolute or relative path specifies are not allowed.")
+        raise NotImplementedError(
+            f"{uri} is not a proper URI. Absolute or relative path specifies are not allowed."
+        )
 
     # attempt to read a binary blob in different formats
     bio = BytesIO(base64.b64decode(uri)) if not received_bytes else BytesIO(uri)
@@ -230,7 +254,9 @@ def to_pandas(uri: str, **kwargs) -> pd.DataFrame:
     if answer is None:
         answer = _readcsv(bio, timestamp_column=timestamp_column)
     if answer is None:
-        raise ValueError("Unable to read data input. Check that it exists and is in the correct format.")
+        raise ValueError(
+            "Unable to read data input. Check that it exists and is in the correct format."
+        )
     # we're enforcing timestamp column dtypes that you can
     # perform arithematic operations on
     if timestamp_column is not None and not isinstance(

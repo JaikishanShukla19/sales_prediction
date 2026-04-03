@@ -39,7 +39,11 @@ def test___split_text_file():
     with tempfile.TemporaryDirectory() as td:
         parts = 10
         filenames = _split_text_file(
-            source="./data/ETTh1.csv", target_dir=td, has_header=True, shuffle=False, parts=parts
+            source="./data/ETTh1.csv",
+            target_dir=td,
+            has_header=True,
+            shuffle=False,
+            parts=parts,
         )
         sum = 0
         for fn in filenames:

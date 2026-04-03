@@ -6,10 +6,11 @@ from typing import Annotated, Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-
 # WARNING: DO NOT IMPORT util here or else you'll get a circular dependency
 
-EverythingPatternedString = Annotated[str, Field(min_length=0, max_length=100, pattern=r"^\S.*\S$|^\S$")]
+EverythingPatternedString = Annotated[
+    str, Field(min_length=0, max_length=100, pattern=r"^\S.*\S$|^\S$")
+]
 
 
 class BaseMetadataInput(BaseModel):
@@ -201,7 +202,8 @@ class ForecastingInferenceInput(BaseInferenceInput):
     )
 
     parameters: ForecastingParameters = Field(
-        description="additional parameters affecting behavior of the forecast.", default_factory=dict
+        description="additional parameters affecting behavior of the forecast.",
+        default_factory=dict,
     )
 
     data: Dict[str, List[Any]] = Field(
@@ -400,5 +402,9 @@ class PredictOutput(BaseModel):
         default=None,
     )
 
-    input_data_points: int = Field(description="Count of input data points.", default=None)
-    output_data_points: int = Field(description="Count of output data points.", default=None)
+    input_data_points: int = Field(
+        description="Count of input data points.", default=None
+    )
+    output_data_points: int = Field(
+        description="Count of output data points.", default=None
+    )

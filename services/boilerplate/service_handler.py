@@ -15,7 +15,6 @@ from .inference_payloads import (
     BaseParameters,
 )
 
-
 LOGGER = logging.getLogger(__file__)
 
 
@@ -63,7 +62,9 @@ class ServiceHandler:
 
         """
 
-        handler_config_path = Path(model_path) if isinstance(model_path, str) else model_path
+        handler_config_path = (
+            Path(model_path) if isinstance(model_path, str) else model_path
+        )
 
         try:
             config = TSFMConfig.from_pretrained(handler_config_path)
@@ -75,13 +76,16 @@ class ServiceHandler:
 
             # could validate handler_class here
 
-            return cls(
-                implementation=handler_class(
-                    model_id=model_id,
-                    model_path=model_path,
-                    handler_config=config,
-                )
-            ), None
+            return (
+                cls(
+                    implementation=handler_class(
+                        model_id=model_id,
+                        model_path=model_path,
+                        handler_config=config,
+                    )
+                ),
+                None,
+            )
         except Exception as e:
             return None, e
 
@@ -111,7 +115,9 @@ class ServiceHandler:
                 case, the tuple contains an error object.
         """
         try:
-            self.implementation.prepare(data=data, schema=schema, parameters=parameters, **kwargs)
+            self.implementation.prepare(
+                data=data, schema=schema, parameters=parameters, **kwargs
+            )
             self.prepared = True
             return self, None
         except Exception as e:
@@ -137,8 +143,12 @@ def get_service_handler_class(
     else:
         raise ValueError(f"Unknown handler_function `{handler_function}`")
 
-    if getattr(config, handler_module_path_identifier, None) and getattr(config, handler_class_name_identifier, None):
-        module = importlib.import_module(getattr(config, handler_module_path_identifier))
+    if getattr(config, handler_module_path_identifier, None) and getattr(
+        config, handler_class_name_identifier, None
+    ):
+        module = importlib.import_module(
+            getattr(config, handler_module_path_identifier)
+        )
         my_class = getattr(module, getattr(config, handler_class_name_identifier))
 
     elif handler_function == HandlerFunction.INFERENCE.value:

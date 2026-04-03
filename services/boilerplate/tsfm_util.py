@@ -18,7 +18,6 @@ from tsfm_public.toolkit.hf_util import register_config
 
 from . import TSFM_ALLOW_LOAD_FROM_HF_HUB
 
-
 LOCAL_FILES_ONLY = not TSFM_ALLOW_LOAD_FROM_HF_HUB
 
 
@@ -48,18 +47,26 @@ def load_config(
     """
     # load config first try autoconfig, if not then we register and load
     try:
-        conf = AutoConfig.from_pretrained(model_path, local_files_only=LOCAL_FILES_ONLY, **extra_config_kwargs)
+        conf = AutoConfig.from_pretrained(
+            model_path, local_files_only=LOCAL_FILES_ONLY, **extra_config_kwargs
+        )
     except (KeyError, ValueError) as exc:  # determine error raised by autoconfig
         if model_type is None or model_config_name is None or module_path is None:
-            raise ValueError("model_type, model_config_name, and module_path should be specified.") from exc
+            raise ValueError(
+                "model_type, model_config_name, and module_path should be specified."
+            ) from exc
 
         register_config(model_type, model_config_name, module_path)
-        conf = AutoConfig.from_pretrained(model_path, local_files_only=LOCAL_FILES_ONLY, **extra_config_kwargs)
+        conf = AutoConfig.from_pretrained(
+            model_path, local_files_only=LOCAL_FILES_ONLY, **extra_config_kwargs
+        )
 
     return conf
 
 
-def _get_model_class(config: PretrainedConfig, module_path: Optional[str] = None) -> type:
+def _get_model_class(
+    config: PretrainedConfig, module_path: Optional[str] = None
+) -> type:
     """Helper to find model class based on config object
 
     First the module_path will be checked if it can be loaded in the current environment. If not
@@ -126,7 +133,9 @@ def load_model(
     """
 
     if module_path is not None and config is None:
-        return ValueError("Config must be provided when loading from a custom module_path")
+        return ValueError(
+            "Config must be provided when loading from a custom module_path"
+        )
 
     if config is not None:
         model_class = _get_model_class(config, module_path=module_path)

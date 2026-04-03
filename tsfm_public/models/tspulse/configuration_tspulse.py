@@ -7,7 +7,6 @@ from typing import List, Optional, Union
 from transformers.configuration_utils import PretrainedConfig
 from transformers.utils import logging
 
-
 logger = logging.get_logger(__name__)
 
 TSPULSE_PRETRAINED_CONFIG_ARCHIVE_MAP = {}
@@ -398,7 +397,9 @@ class TSPulseConfig(PretrainedConfig):
         self.full_patch_mask_percentage = full_patch_mask_percentage
 
         self.fft_time_add_forecasting_pt_loss = fft_time_add_forecasting_pt_loss
-        self.fft_time_add_forecasting_pt_loss_weight = fft_time_add_forecasting_pt_loss_weight
+        self.fft_time_add_forecasting_pt_loss_weight = (
+            fft_time_add_forecasting_pt_loss_weight
+        )
 
         self.batch_aware_masking = batch_aware_masking
 
@@ -420,7 +421,10 @@ class TSPulseConfig(PretrainedConfig):
             setattr(
                 self,
                 actual_param,
-                [int(getattr(self, base_param) * float(i)) for i in getattr(self, scale_param)],
+                [
+                    int(getattr(self, base_param) * float(i))
+                    for i in getattr(self, scale_param)
+                ],
             )
 
         for i in getattr(self, actual_param):
@@ -442,19 +446,27 @@ class TSPulseConfig(PretrainedConfig):
         # print("Number of channels:", self.num_input_channels)
 
         if self.data_actual_context_length is not None:
-            raise Exception("Set data_actual_context_length to None. Variable length input is not allowed currently.")
+            raise Exception(
+                "Set data_actual_context_length to None. Variable length input is not allowed currently."
+            )
 
         if self.channel_register_tokens is not None:
-            raise Exception("channel_register_tokens is not allowed. Set channel_register_tokens to None")
+            raise Exception(
+                "channel_register_tokens is not allowed. Set channel_register_tokens to None"
+            )
         if self.fuse_fft and self.context_length % 2 != 0:
-            raise Exception("context length needs to be divisible by 2 when fuse_fft is True")
+            raise Exception(
+                "context length needs to be divisible by 2 when fuse_fft is True"
+            )
 
         if self.patch_length != self.patch_stride:
             raise Exception("Overlapping patches are not allowed currently..")
 
         if self.mask_ratio and self.mask_ratio > 0:
             if self.mask_block_length != self.patch_length:
-                logger.warning("Please be aware that Mask block length is set different from the patch length")
+                logger.warning(
+                    "Please be aware that Mask block length is set different from the patch length"
+                )
 
         # if self.total_embedding_size is None:
         #     raise Exception("total_embedding_size cannot be None")
@@ -471,16 +483,20 @@ class TSPulseConfig(PretrainedConfig):
                 self.num_patches = self.num_patches * 2
 
         if self.mode == "common_channel":
-            if not self._check_one_or_none(self.num_channels_layerwise_scale) or not self._check_one_or_none(
-                self.decoder_num_channels_layerwise_scale
-            ):
-                logger.warning("Channel Compression not allowed when mode is common_channel. Setting it not None")
+            if not self._check_one_or_none(
+                self.num_channels_layerwise_scale
+            ) or not self._check_one_or_none(self.decoder_num_channels_layerwise_scale):
+                logger.warning(
+                    "Channel Compression not allowed when mode is common_channel. Setting it not None"
+                )
                 self.num_channels_layerwise_scale = None
                 self.decoder_num_channels_layerwise_scale = None
 
         if task in ["classification"]:
             if not self._check_one_or_none(self.num_channels_layerwise_scale):
-                logger.warning("Channel Compression is not allowed in encoder for classification. Setting it to None")
+                logger.warning(
+                    "Channel Compression is not allowed in encoder for classification. Setting it to None"
+                )
                 self.num_channels_layerwise_scale = None
 
         self.set_scale(

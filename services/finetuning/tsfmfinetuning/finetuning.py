@@ -22,13 +22,14 @@ from .ftpayloads import (
 from .ioutils import to_pandas
 from .tuning_handler import TuningHandler
 
-
 LOGGER = logging.getLogger(__file__)
 
 
 class FinetuningRuntime:
     def add_routes(self, app):
-        self.router = APIRouter(prefix=f"/{API_VERSION}/finetuning", tags=["finetuning"])
+        self.router = APIRouter(
+            prefix=f"/{API_VERSION}/finetuning", tags=["finetuning"]
+        )
         self.router.add_api_route(
             "/tinytimemixer/forecasting",
             self.finetuning,
@@ -37,14 +38,23 @@ class FinetuningRuntime:
         )
         app.include_router(self.router)
 
-    def finetuning(self, input: TinyTimeMixerForecastingTuneInput, tuned_model_name: str, output_dir: Path):
-        answer, ex = self._finetuning_common(input, tuned_model_name=tuned_model_name, tmp_dir=output_dir)
+    def finetuning(
+        self,
+        input: TinyTimeMixerForecastingTuneInput,
+        tuned_model_name: str,
+        output_dir: Path,
+    ):
+        answer, ex = self._finetuning_common(
+            input, tuned_model_name=tuned_model_name, tmp_dir=output_dir
+        )
 
         if ex is not None:
             import traceback
 
             traceback.print_exception(ex)
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=repr(ex))
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=repr(ex)
+            )
 
         return answer
 
@@ -69,7 +79,9 @@ class FinetuningRuntime:
                     f"Could not load model {input_payload.model_id} from {TSFM_MODEL_DIR}. If trying to load directly from the HuggingFace Hub please ensure that `TSFM_ALLOW_LOAD_FROM_HF_HUB=1`"
                 )
 
-        handler, e = TuningHandler.load(model_id=input_payload.model_id, model_path=model_path)
+        handler, e = TuningHandler.load(
+            model_id=input_payload.model_id, model_path=model_path
+        )
         if e is not None:
             return None, e
 
@@ -85,7 +97,11 @@ class FinetuningRuntime:
             return None, e
 
         output, e = handler.train(
-            data=data, schema=schema, parameters=parameters, tuned_model_name=tuned_model_name, tmp_dir=tmp_dir
+            data=data,
+            schema=schema,
+            parameters=parameters,
+            tuned_model_name=tuned_model_name,
+            tmp_dir=tmp_dir,
         )
         if e is not None:
             return None, e

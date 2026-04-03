@@ -24,7 +24,11 @@ def get_inference_response(
 
 
 def numts(msg):
-    return 1 if "id_cols" not in msg["parameters"] else len(set(msg["parameters"]["id_columns"]))
+    return (
+        1
+        if "id_cols" not in msg["parameters"]
+        else len(set(msg["parameters"]["id_columns"]))
+    )
 
 
 """

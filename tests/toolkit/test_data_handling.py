@@ -17,4 +17,6 @@ def test_load_dataset():
         dataset_path="https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh1.csv",
     )
 
-    np.testing.assert_allclose([len(x) for x in [dset_train, dset_valid, dset_test]], [8033, 2785, 2785])
+    np.testing.assert_allclose(
+        [len(x) for x in [dset_train, dset_valid, dset_test]], [8033, 2785, 2785]
+    )

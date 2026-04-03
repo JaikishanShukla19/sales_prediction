@@ -23,7 +23,6 @@ from transformers.utils import (
 
 from tsfm_public.models.flowstate.configuration_flowstate import FlowStateConfig
 
-
 logger = logging.get_logger(__name__)
 
 _CONFIG_FOR_DOC = "FlowStateConfig"
@@ -107,7 +106,11 @@ class FlowStateCausalRevIN(nn.Module):
             n = torch.arange(1, x.shape[1] + 1, device=x.device).unsqueeze(-1)
         self.mean = (torch.cumsum(x, dim=1) / n).detach()
         mask = 1.0 if not self.missing else 1 - x[:, :, 1:]
-        self.stdev = torch.sqrt(torch.clamp(torch.cumsum(((x - self.mean) * mask) ** 2, 1) / n, min=self.eps)).detach()
+        self.stdev = torch.sqrt(
+            torch.clamp(
+                torch.cumsum(((x - self.mean) * mask) ** 2, 1) / n, min=self.eps
+            )
+        ).detach()
         if self.missing:
             self.mean = self.mean[..., :-1]
             self.stdev = self.stdev[..., :-1]
@@ -185,7 +188,9 @@ def FlowStateLegendreBasis(x, degree):
     if degree > 0:
         retvar[:, 1] = x
         for ii in range(1, degree):
-            retvar[:, ii + 1] = ((2 * ii + 1) * x * retvar[:, ii] - ii * retvar[:, ii - 1]) / (ii + 1)
+            retvar[:, ii + 1] = (
+                (2 * ii + 1) * x * retvar[:, ii] - ii * retvar[:, ii - 1]
+            ) / (ii + 1)
     if retvar.ndim == 3:
         retvar = retvar.permute(2, 0, 1)
     return retvar
@@ -207,7 +212,11 @@ def FlowStateFourierBasis(x, degree):
         retvar = retvar.permute(1, 2, 0)
         x = x.transpose(0, -1)
     if degree > 0:
-        t2 = torch.einsum("t...,n->tn...", x, 2 * torch.pi * torch.arange(1, degree // 2 + 1).to(x.device))
+        t2 = torch.einsum(
+            "t...,n->tn...",
+            x,
+            2 * torch.pi * torch.arange(1, degree // 2 + 1).to(x.device),
+        )
         retvar[:, 1::2] = torch.sin(t2)
         retvar[:, 2::2] = torch.cos(t2)
     if retvar.ndim == 3:
@@ -286,7 +295,9 @@ class FlowStateS5Block(nn.Module):
         self.output_gating = config.out_gating
         self.config = config
         if self.output_gating:
-            self.output_gate = nn.Linear(config.embedding_feature_dim, config.embedding_feature_dim)
+            self.output_gate = nn.Linear(
+                config.embedding_feature_dim, config.embedding_feature_dim
+            )
         self.init_params()
 
     def init_params(self):
@@ -295,17 +306,25 @@ class FlowStateS5Block(nn.Module):
             H = self.config.embedding_feature_dim
             encoder_num_hippo_blocks = self.config.encoder_num_hippo_blocks
             if state_dim % encoder_num_hippo_blocks != 0:
-                raise ValueError("encoder_state_dim has to be divisible by encoder_num_hippo_blocks.")
+                raise ValueError(
+                    "encoder_state_dim has to be divisible by encoder_num_hippo_blocks."
+                )
             block_size = int(state_dim / encoder_num_hippo_blocks)
             # blockwise Hippo-N diagonalized
             n = torch.sqrt(2 * (torch.arange(block_size) + 1.0) + 1)
             A = -torch.outer(n, n) / 2
             A = -0.5 * torch.eye(block_size) + torch.triu(A) - torch.tril(A)
-            Lambda, V = torch.linalg.eig(torch.block_diag(*encoder_num_hippo_blocks * [A]))
+            Lambda, V = torch.linalg.eig(
+                torch.block_diag(*encoder_num_hippo_blocks * [A])
+            )
             self.log_Lambda_real = torch.nn.Parameter(torch.log(-Lambda.real))
             self.Lambda_imag = torch.nn.Parameter(Lambda.imag)
 
-            B = 0.5 / torch.sqrt(torch.tensor(H)) * (torch.randn(state_dim, H) + torch.randn(state_dim, H) * 1.0j)
+            B = (
+                0.5
+                / torch.sqrt(torch.tensor(H))
+                * (torch.randn(state_dim, H) + torch.randn(state_dim, H) * 1.0j)
+            )
             C = (
                 0.5
                 / torch.sqrt(torch.tensor(state_dim))
@@ -316,8 +335,12 @@ class FlowStateS5Block(nn.Module):
             self.C_tilde_r = nn.Parameter((C @ V).real)
             self.C_tilde_i = nn.Parameter((C @ V).imag)
             self.D = nn.Parameter(torch.randn(H))
-            log_min, log_max = torch.log(torch.tensor(0.001)), torch.log(torch.tensor(0.1))
-            self.log_Delta = nn.Parameter(log_min + (log_max - log_min) * torch.rand(state_dim))
+            log_min, log_max = torch.log(torch.tensor(0.001)), torch.log(
+                torch.tensor(0.1)
+            )
+            self.log_Delta = nn.Parameter(
+                log_min + (log_max - log_min) * torch.rand(state_dim)
+            )
 
     def get_discretized(self, scale_factor, L=None):
         """Discretize a diagonalized, continuous-time linear SSM
@@ -327,13 +350,26 @@ class FlowStateS5Block(nn.Module):
         Returns:
         discretized kernel (complex64), B_bar (complex64) (P,), (P,H)"""
         if L is None:
-            L = int((self.config.context_length + 1 - self.config.patch) / self.config.stride - 1e-9) + 1
+            L = (
+                int(
+                    (self.config.context_length + 1 - self.config.patch)
+                    / self.config.stride
+                    - 1e-9
+                )
+                + 1
+            )
         lambda_ = -torch.exp(self.log_Lambda_real) + 1j * self.Lambda_imag
         device = lambda_.device
         B_tilde = self.B_tilde_r + 1.0j * self.B_tilde_i
         scale_factor = scale_factor.repeat((lambda_.shape[0], 1)).T
-        log_Lambda_bar = scale_factor.unsqueeze(1) * lambda_[None, None, :] * torch.exp(self.log_Delta)
-        kernel = torch.einsum("bLd,L->bLd", log_Lambda_bar, torch.arange(L - 1, -1, -1, device=device)).exp()
+        log_Lambda_bar = (
+            scale_factor.unsqueeze(1)
+            * lambda_[None, None, :]
+            * torch.exp(self.log_Delta)
+        )
+        kernel = torch.einsum(
+            "bLd,L->bLd", log_Lambda_bar, torch.arange(L - 1, -1, -1, device=device)
+        ).exp()
         B_bar = (1 / lambda_ * (kernel[:, -2] - 1.0))[..., None] * B_tilde
 
         return kernel, B_bar
@@ -352,7 +388,9 @@ class FlowStateS5Block(nn.Module):
         buff = torch.fft.fft(Bu_elements, n=2 * l, dim=0)
         o = torch.fft.ifft(kff * buff, n=2 * l, dim=0)[:l]
 
-        if self.last and self.config.min_context == Bu_elements.shape[0]:  # only last hidden state will be used
+        if (
+            self.last and self.config.min_context == Bu_elements.shape[0]
+        ):  # only last hidden state will be used
             return o[-1].unsqueeze(0)
         elif self.last:
             return o[min(self.config.min_context, o.shape[0]) - 1 :]
@@ -375,7 +413,9 @@ class FlowStateS5Block(nn.Module):
 
         xs = self.apply_ssm_kern_ff(Bu_elements, kernel)
         if self.last:
-            input_sequences = input_sequences[min(self.config.min_context, input_sequences.shape[0]) - 1 :]
+            input_sequences = input_sequences[
+                min(self.config.min_context, input_sequences.shape[0]) - 1 :
+            ]
         # Compute SSM output sequence
         xs = torch.einsum("hn,...bn->...bh", self.C_tilde_r, xs.real) + torch.einsum(
             "hn,...bn->...bh", self.C_tilde_i, -xs.imag
@@ -422,7 +462,9 @@ class FlowStateS5Layer(nn.Module):
 
     def forward(self, x, scale_factor):
         skip = (
-            x if (not self.last or x.ndim == 2) else x[min(self.config.min_context, x.shape[0]) - 1 :]
+            x
+            if (not self.last or x.ndim == 2)
+            else x[min(self.config.min_context, x.shape[0]) - 1 :]
         )  # last layer doesn't need MLP on all timesteps
         # SSM
         x = self.ssm(x, scale_factor)
@@ -474,12 +516,16 @@ class FlowStateEncoder(FlowStatePreTrainedModel):
 
         self.layers = nn.ModuleList(
             [
-                FlowStateS5Layer(config, last=(i == config.encoder_num_layers - 1), ssm=True)
+                FlowStateS5Layer(
+                    config, last=(i == config.encoder_num_layers - 1), ssm=True
+                )
                 for i in range(config.encoder_num_layers)
             ]
         )
 
-    @replace_return_docstrings(output_type=FlowStateEncoderOutput, config_class=_CONFIG_FOR_DOC)
+    @replace_return_docstrings(
+        output_type=FlowStateEncoderOutput, config_class=_CONFIG_FOR_DOC
+    )
     def forward(
         self,
         encoder_inputs: torch.Tensor,
@@ -496,7 +542,10 @@ class FlowStateEncoder(FlowStatePreTrainedModel):
             `torch.FloatTensor` of shape `(1, batch_size, encoder_state_dim)`
         """
         if type(scale_factor) is not torch.Tensor or scale_factor.ndim == 0:
-            scale_factor = torch.ones(encoder_inputs.shape[1], device=encoder_inputs.device) * scale_factor
+            scale_factor = (
+                torch.ones(encoder_inputs.shape[1], device=encoder_inputs.device)
+                * scale_factor
+            )
         output = encoder_inputs
 
         all_hidden_states = []
@@ -506,7 +555,9 @@ class FlowStateEncoder(FlowStatePreTrainedModel):
             output = lay(output, scale_factor=scale_factor)
             all_hidden_states.append(output)
 
-        return FlowStateEncoderOutput(last_hidden_state=output, hidden_states=all_hidden_states)
+        return FlowStateEncoderOutput(
+            last_hidden_state=output, hidden_states=all_hidden_states
+        )
 
 
 class FlowStateFunctionalBasisDecoder(FlowStatePreTrainedModel):
@@ -545,14 +596,20 @@ class FlowStateFunctionalBasisDecoder(FlowStatePreTrainedModel):
 
     def get_t(self, scale, pred_dim, device):
         dt = scale * (self.range[1] - self.range[0]) / self.pred_dist
-        t = self.range[0] + torch.arange(1, pred_dim + 1, dtype=torch.float, device=device) * dt
+        t = (
+            self.range[0]
+            + torch.arange(1, pred_dim + 1, dtype=torch.float, device=device) * dt
+        )
         return t
 
     def get_kernel(self, sampling_factor, target_points, device):
         with torch.no_grad():
             if type(sampling_factor) is torch.Tensor and sampling_factor.ndim > 0:
                 # individual factor per sample
-                t = torch.stack([self.get_t(sf, target_points, device) for sf in sampling_factor], dim=0).to(device)
+                t = torch.stack(
+                    [self.get_t(sf, target_points, device) for sf in sampling_factor],
+                    dim=0,
+                ).to(device)
             else:
                 t = self.get_t(sampling_factor, target_points, device)
 
@@ -561,7 +618,9 @@ class FlowStateFunctionalBasisDecoder(FlowStatePreTrainedModel):
 
         return f.float() / 4.0
 
-    @replace_return_docstrings(output_type=FlowStateDecoderOutput, config_class=_CONFIG_FOR_DOC)
+    @replace_return_docstrings(
+        output_type=FlowStateDecoderOutput, config_class=_CONFIG_FOR_DOC
+    )
     def forward(
         self,
         encoder_output: FlowStateEncoderOutput,
@@ -592,12 +651,16 @@ class FlowStateFunctionalBasisDecoder(FlowStatePreTrainedModel):
         W = self.get_kernel(scale_factor, prediction_length, hidden_state.device)
         if W.ndim == 2:
             return FlowStateDecoderOutput(
-                last_hidden_state=torch.einsum("...h,ph->...p", hidden_state, W).unsqueeze(-1),
+                last_hidden_state=torch.einsum(
+                    "...h,ph->...p", hidden_state, W
+                ).unsqueeze(-1),
                 hidden_states=[hidden_state],
             )
         else:
             return FlowStateDecoderOutput(
-                last_hidden_state=torch.einsum("...bqh,bph->...bqp", hidden_state, W).unsqueeze(-1),
+                last_hidden_state=torch.einsum(
+                    "...bqh,bph->...bqp", hidden_state, W
+                ).unsqueeze(-1),
                 hidden_states=[hidden_state],
             )
 
@@ -625,14 +688,18 @@ class FlowStateModel(FlowStatePreTrainedModel):
         self.decoder = FlowStateFunctionalBasisDecoder(config)
 
         trainable_paras = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        decoder_paras = sum(p.numel() for p in self.decoder.parameters() if p.requires_grad)
+        decoder_paras = sum(
+            p.numel() for p in self.decoder.parameters() if p.requires_grad
+        )
         logger.info(f" Total Number of parameters: {trainable_paras * 1e-3}k")
         logger.info(
             f"Number of decoder parameters: {decoder_paras * 1e-3}k ({100 * decoder_paras / trainable_paras:.2f}%)"
         )
 
     @add_start_docstrings_to_model_forward(FLOWSTATE_INPUTS_DOCSTRING)
-    @replace_return_docstrings(output_type=FlowStateModelOutput, config_class=_CONFIG_FOR_DOC)
+    @replace_return_docstrings(
+        output_type=FlowStateModelOutput, config_class=_CONFIG_FOR_DOC
+    )
     def forward(
         self,
         past_values: torch.Tensor,
@@ -671,7 +738,9 @@ class FlowStateModel(FlowStatePreTrainedModel):
             raise ValueError(
                 "`past_values` must have 3 dimensions of shape `(sequence_length, batch_size, num_input_channels)`."
             )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = (
+            return_dict if return_dict is not None else self.config.use_return_dict
+        )
 
         if batch_first:
             time_first_past_values = torch.transpose(past_values, 1, 0)
@@ -680,21 +749,32 @@ class FlowStateModel(FlowStatePreTrainedModel):
 
         L, batch, n_ch = time_first_past_values.shape
         if n_ch > 1:
-            raise RuntimeError("past_values may only contain a single variate / channel.")
+            raise RuntimeError(
+                "past_values may only contain a single variate / channel."
+            )
 
         if self.config.with_missing:
             # if input contains nans, fill as missing
-            mask = torch.where(time_first_past_values.isnan(), torch.ones_like(time_first_past_values), 0)
+            mask = torch.where(
+                time_first_past_values.isnan(),
+                torch.ones_like(time_first_past_values),
+                0,
+            )
             time_first_past_values = torch.nan_to_num(time_first_past_values, 0.0)
             time_first_past_values = torch.cat((time_first_past_values, mask), dim=-1)
             if mask_n > 0:
-                apdx = torch.cat((torch.zeros(mask_n, batch, n_ch), torch.ones(mask_n, batch, 1)), dim=-1).to(
-                    past_values.device
+                apdx = torch.cat(
+                    (torch.zeros(mask_n, batch, n_ch), torch.ones(mask_n, batch, 1)),
+                    dim=-1,
+                ).to(past_values.device)
+                time_first_past_values = torch.cat(
+                    (time_first_past_values, apdx), dim=0
                 )
-                time_first_past_values = torch.cat((time_first_past_values, apdx), dim=0)
 
         # Normalize the inputs
-        time_first_past_values = self.norm(time_first_past_values.transpose(0, 1), "norm").transpose(0, 1)
+        time_first_past_values = self.norm(
+            time_first_past_values.transpose(0, 1), "norm"
+        ).transpose(0, 1)
 
         # Emebd the inputs
         encoder_inputs = self.embed(time_first_past_values)
@@ -812,7 +892,9 @@ class FlowStateForPrediction(FlowStatePreTrainedModel):
             )
 
     @add_start_docstrings_to_model_forward(FLOWSTATE_INPUTS_DOCSTRING)
-    @replace_return_docstrings(output_type=FlowStateForPredictionOutput, config_class=_CONFIG_FOR_DOC)
+    @replace_return_docstrings(
+        output_type=FlowStateForPredictionOutput, config_class=_CONFIG_FOR_DOC
+    )
     def forward(
         self,
         past_values: torch.Tensor,
@@ -883,18 +965,24 @@ class FlowStateForPrediction(FlowStatePreTrainedModel):
             raise ValueError(
                 "`past_values` must have 3 dimensions of shape `(sequence_length, batch_size, num_input_channels)`."
             )
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        return_dict = (
+            return_dict if return_dict is not None else self.config.use_return_dict
+        )
         max_decoder_patch_len = int(self.config.decoder_patch_len / scale_factor + 1e-6)
         if prediction_length == -1:
             prediction_length = max_decoder_patch_len
         # prepare multi patch inferencing
         mask_n = max(0, prediction_length - max_decoder_patch_len)
-        max_context = min(16 * 1024, int(self.config.context_length / scale_factor)) - mask_n
+        max_context = (
+            min(16 * 1024, int(self.config.context_length / scale_factor)) - mask_n
+        )
         if not batch_first:
             past_values = past_values.transpose(0, 1)
         past_values = past_values[:, -max_context:]
         if mask_n > 0:
-            self.model.config.min_context = past_values.shape[1]  # min context from which to start predicting
+            self.model.config.min_context = past_values.shape[
+                1
+            ]  # min context from which to start predicting
         else:
             self.model.config.min_context = 0
         # past_values: tensor [batch_size x seq_length x num_input_channels], or [seq_length x batch_size x num_input_channels]
@@ -912,7 +1000,9 @@ class FlowStateForPrediction(FlowStatePreTrainedModel):
         )
 
         quantiles = torch.quantile(
-            model_output.last_hidden_state, torch.tensor(self.config.quantiles).to(past_values.device), 1
+            model_output.last_hidden_state,
+            torch.tensor(self.config.quantiles).to(past_values.device),
+            1,
         ).transpose(0, 1)
         point_predictions = self._transform_quantiles_to(quantiles, prediction_type)
         loss_val = None

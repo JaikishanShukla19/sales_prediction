@@ -19,7 +19,6 @@ from tsfm_public.toolkit.w1acas import (
     get_forecast_conformal_adaptive_online_score,
 )
 
-
 if __name__ == "__main__":
     # Argument parser
     parser = argparse.ArgumentParser(description="W1ACAS Anomaly Detection Pipeline")
@@ -38,8 +37,12 @@ if __name__ == "__main__":
         choices=["ttm", "flowstate", "chronos-bolt-small", "tirex"],
         help="Model name to use for forecasting",
     )
-    parser.add_argument("--context_length", type=int, default=90, help="Context window length")
-    parser.add_argument("--prediction_length", type=int, default=15, help="Forecast horizon")
+    parser.add_argument(
+        "--context_length", type=int, default=90, help="Context window length"
+    )
+    parser.add_argument(
+        "--prediction_length", type=int, default=15, help="Forecast horizon"
+    )
 
     # W1ACAS parameters
     parser.add_argument(
@@ -69,10 +72,23 @@ if __name__ == "__main__":
         help="Type of nonconformity score to compute forecast errors",
     )
     parser.add_argument(
-        "--n_epochs", type=int, default=1, help="Number of optimization epochs for adaptive weight learning"
+        "--n_epochs",
+        type=int,
+        default=1,
+        help="Number of optimization epochs for adaptive weight learning",
     )
-    parser.add_argument("--n_batch_update", type=int, default=10, help="Batch size for updating adaptive weights")
-    parser.add_argument("--lr", type=float, default=0.001, help="Learning rate for adaptive weight optimization")
+    parser.add_argument(
+        "--n_batch_update",
+        type=int,
+        default=10,
+        help="Batch size for updating adaptive weights",
+    )
+    parser.add_argument(
+        "--lr",
+        type=float,
+        default=0.001,
+        help="Learning rate for adaptive weight optimization",
+    )
     parser.add_argument(
         "--prior_past_weights_value",
         type=str,
@@ -85,7 +101,9 @@ if __name__ == "__main__":
         help="If set, returns calibration scores and weights along with p-values",
     )
     parser.add_argument(
-        "--tsb_ad_evaluation", action="store_true", help="If set, also computes TSB-AD evaluation metrics"
+        "--tsb_ad_evaluation",
+        action="store_true",
+        help="If set, also computes TSB-AD evaluation metrics",
     )
 
     args = parser.parse_args()
@@ -189,7 +207,9 @@ if __name__ == "__main__":
             fixed_context=False,
         )
     else:
-        raise ValueError(f"Unsupported model_name: {model_name}. Must be 'ttm' or 'flowstate'.")
+        raise ValueError(
+            f"Unsupported model_name: {model_name}. Must be 'ttm' or 'flowstate'."
+        )
 
     # Check if last row of y_true is all NaNs (no ground truth for future predictions)
     y_true = forecast_output["y_true"]
@@ -198,7 +218,10 @@ if __name__ == "__main__":
     if last_row_all_nan:
         print("Last row of y_true is all NaN - will be excluded from scoring")
         # Remove last row from forecast output before scoring
-        forecast_output_filtered = {"y_pred": forecast_output["y_pred"][:-1], "y_true": forecast_output["y_true"][:-1]}
+        forecast_output_filtered = {
+            "y_pred": forecast_output["y_pred"][:-1],
+            "y_true": forecast_output["y_true"][:-1],
+        }
     else:
         forecast_output_filtered = forecast_output
 
@@ -229,7 +252,9 @@ if __name__ == "__main__":
     label_test = label[train_index:]
     # p_values_all[0:train_index] = 1
 
-    print(f"P-values test shape: {p_values_test.shape}, label_test shape: {label.shape}")
+    print(
+        f"P-values test shape: {p_values_test.shape}, label_test shape: {label.shape}"
+    )
 
     # Compute standard evaluation metrics
     evaluation = get_scores_eval(1 - p_values_test, label_test)
@@ -243,7 +268,9 @@ if __name__ == "__main__":
     # Compute TSB-AD evaluation metrics if requested
     if tsb_ad_evaluation:
         slidingWindow = find_length_rank(data[:, 0].reshape(-1, 1), rank=1)
-        evaluation_tsb_ad = get_scores_tsb_ad_eval(1 - p_values_test, label_test, slidingWindow=slidingWindow)
+        evaluation_tsb_ad = get_scores_tsb_ad_eval(
+            1 - p_values_test, label_test, slidingWindow=slidingWindow
+        )
         print("\nTSB-AD Evaluation metrics:")
         print(evaluation_tsb_ad)
 
@@ -275,7 +302,12 @@ if __name__ == "__main__":
     # Generate and save visualization
     print("\nGenerating visualization...")
     plot_anomaly_detection(
-        data[train_index:], label_test, p_values_test, label_pred_test, threshold=threshold, output_dir=output_base_dir
+        data[train_index:],
+        label_test,
+        p_values_test,
+        label_pred_test,
+        threshold=threshold,
+        output_dir=output_base_dir,
     )
 
     print(f"\n✓ All outputs saved to: {output_base_dir}")

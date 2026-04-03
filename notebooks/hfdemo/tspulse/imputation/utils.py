@@ -6,7 +6,6 @@ import numpy as np
 import torch
 from transformers.utils import logging
 
-
 logger = logging.get_logger(__name__)
 
 
@@ -35,29 +34,43 @@ def mask_contiguous_with_token(tensor, mask_percentage, patch_length, generator)
     num_patches = s // patch_length
 
     if s % patch_length != 0:
-        raise ValueError("Sequence length (s) must be divisible by the patch length (K).")
+        raise ValueError(
+            "Sequence length (s) must be divisible by the patch length (K)."
+        )
 
     tensor = tensor.transpose(-1, -2)  # b, c, s
 
     num_patches_to_mask_per_sample = int(num_patches * mask_percentage)
 
-    rand_indices = torch.rand((b, c, num_patches), device=tensor.device, generator=generator).argsort(dim=2)
+    rand_indices = torch.rand(
+        (b, c, num_patches), device=tensor.device, generator=generator
+    ).argsort(dim=2)
 
-    mask_patches = torch.ones((b, c, num_patches), dtype=torch.bool, device=tensor.device)
+    mask_patches = torch.ones(
+        (b, c, num_patches), dtype=torch.bool, device=tensor.device
+    )
 
     batch_mask = torch.ones(b, dtype=torch.bool, device=tensor.device)
 
     mask_indices = rand_indices[:, :, :num_patches_to_mask_per_sample]
-    mask_patches[batch_mask] = mask_patches[batch_mask].scatter(-1, mask_indices[batch_mask], False)
+    mask_patches[batch_mask] = mask_patches[batch_mask].scatter(
+        -1, mask_indices[batch_mask], False
+    )
 
     patch_mask = mask_patches.unsqueeze(-1).expand(-1, -1, -1, patch_length)
 
-    mask = ~patch_mask.reshape(b, c, s // patch_length, patch_length).permute(0, 2, 3, 1).reshape(b, s, c)
+    mask = (
+        ~patch_mask.reshape(b, c, s // patch_length, patch_length)
+        .permute(0, 2, 3, 1)
+        .reshape(b, s, c)
+    )
 
     return mask
 
 
-def hybrid_masking_with_token(tensor, mask_percentage, patch_size, num_full_patches_to_mask, generator):
+def hybrid_masking_with_token(
+    tensor, mask_percentage, patch_size, num_full_patches_to_mask, generator
+):
     patch_size = 8
     B, T, C = tensor.shape
     device = tensor.device
@@ -75,14 +88,22 @@ def hybrid_masking_with_token(tensor, mask_percentage, patch_size, num_full_patc
     num_patches = T // patch_size
 
     rand_vals = torch.rand(B, C, num_patches, device=device, generator=generator)
-    _, top_patch_ids = torch.topk(rand_vals, k=num_full_patches_to_mask, dim=2)  # [B, C, K]
-    selected_patch_ids = top_patch_ids.unsqueeze(1).expand(B, T, C, num_full_patches_to_mask)
-    patch_id_exp = patch_ids_full.view(1, T, 1, 1).expand(B, T, C, num_full_patches_to_mask)
+    _, top_patch_ids = torch.topk(
+        rand_vals, k=num_full_patches_to_mask, dim=2
+    )  # [B, C, K]
+    selected_patch_ids = top_patch_ids.unsqueeze(1).expand(
+        B, T, C, num_full_patches_to_mask
+    )
+    patch_id_exp = patch_ids_full.view(1, T, 1, 1).expand(
+        B, T, C, num_full_patches_to_mask
+    )
     full_patch_mask = (patch_id_exp == selected_patch_ids).any(-1)  # [B, T, C]
 
     full_patch_counts = full_patch_mask.sum(dim=1)  # [B, C]
     total_masks_per_channel = int(mask_percentage * T)
-    remaining_masks = (total_masks_per_channel - full_patch_counts).clamp(min=0)  # [B, C]
+    remaining_masks = (total_masks_per_channel - full_patch_counts).clamp(
+        min=0
+    )  # [B, C]
 
     rand_scores = torch.rand(B, T, C, device=device, generator=generator)
     rand_scores[full_patch_mask] = float("inf")
@@ -96,9 +117,18 @@ def hybrid_masking_with_token(tensor, mask_percentage, patch_size, num_full_patc
     return mask
 
 
-def mask_generate(generator, x, patch_len, mask_rate, mask_type="hybrid", num_full_patches_for_hybrid_mask=4):
+def mask_generate(
+    generator,
+    x,
+    patch_len,
+    mask_rate,
+    mask_type="hybrid",
+    num_full_patches_for_hybrid_mask=4,
+):
     if mask_type == "hybrid":
-        num_full_patches_for_hybrid_mask = int((num_full_patches_for_hybrid_mask) * (mask_rate / 0.125))
+        num_full_patches_for_hybrid_mask = int(
+            (num_full_patches_for_hybrid_mask) * (mask_rate / 0.125)
+        )
         mask = hybrid_masking_with_token(
             x, mask_rate, patch_len, num_full_patches_for_hybrid_mask, generator
         )  # in mask tensor currently missing position are 1

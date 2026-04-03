@@ -19,7 +19,6 @@ from tsfminference.inference_payloads import (
     PredictOutput,
 )
 
-
 SERIES_LENGTH = int(os.getenv("TSFM_PROFILE_SERIES_LENGTH", 512))
 FORECAST_LENGTH = 96
 MODEL_ID = "mytest-tsfm/ttm-r1"
@@ -97,13 +96,17 @@ def forecasting_input_base() -> ForecastingInferenceInput:
     return input
 
 
-def _basic_result_checks(results: PredictOutput, df: pd.DataFrame, num_timeseries: int = NUM_TIMESERIES):
+def _basic_result_checks(
+    results: PredictOutput, df: pd.DataFrame, num_timeseries: int = NUM_TIMESERIES
+):
     # expected length
     assert len(results) == FORECAST_LENGTH * num_timeseries
     # expected start time
     answer = results["date"].iloc[0] - df["date"].iloc[-1]
     assert (
-        answer == timedelta(hours=1) if isinstance(answer, timedelta) else answer == timedelta(hours=1).total_seconds()
+        answer == timedelta(hours=1)
+        if isinstance(answer, timedelta)
+        else answer == timedelta(hours=1).total_seconds()
     )
     # expected end time
     answer = results["date"].iloc[-1] - df["date"].iloc[-1]
@@ -114,7 +117,9 @@ def _basic_result_checks(results: PredictOutput, df: pd.DataFrame, num_timeserie
     )
 
 
-def test_forecast_with_decimal_freq(ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput):
+def test_forecast_with_decimal_freq(
+    ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
+):
     input: ForecastingInferenceInput = forecasting_input_base
     input: ForecastingInferenceInput = copy.deepcopy(input)
     input.schema.freq = "3600.0s"  # 1-hr
@@ -168,10 +173,16 @@ def test_forecast_with_single_character_column_name(
     _basic_result_checks(results, df)
 
 
-def test_forecast_with_good_data(ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput):
+def test_forecast_with_good_data(
+    ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
+):
     input = forecasting_input_base
     model_id = input.model_id
-    df = ts_data_base if int(os.environ.get("TSFM_TESTS_AS_PROFILER", "0")) == 0 else copy.deepcopy(ts_data_base)
+    df = (
+        ts_data_base
+        if int(os.environ.get("TSFM_TESTS_AS_PROFILER", "0")) == 0
+        else copy.deepcopy(ts_data_base)
+    )
     input.data = df.to_dict(orient="list")
 
     # useful for generating sample payload files
@@ -192,9 +203,15 @@ def test_quantile_forecast_with_single_timeseries(
     ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
 ):
     input = copy.deepcopy(forecasting_input_base)
-    df = copy.deepcopy(ts_data_base) if False else series_for_quantile_tests(num_series=1, extra=0)
+    df = (
+        copy.deepcopy(ts_data_base)
+        if False
+        else series_for_quantile_tests(num_series=1, extra=0)
+    )
     quantile_calibration_data = (
-        copy.deepcopy(ts_data_base) if False else series_for_quantile_tests(num_series=1, extra=FORECAST_LENGTH + 5)
+        copy.deepcopy(ts_data_base)
+        if False
+        else series_for_quantile_tests(num_series=1, extra=FORECAST_LENGTH + 5)
     )
     input.data = df.to_dict(orient="list")
     input.quantile_calibration_data = quantile_calibration_data.to_dict(orient="list")
@@ -213,16 +230,24 @@ def test_quantile_forecast_with_single_timeseries(
     assert len(expected.intersection(set(results.columns))) == 2
 
     # confirm that mean predictions fall between quantile predictions
-    assert ((results["VAL_q0.1"] < results["VAL"]) & (results["VAL"] < results["VAL_q0.9"])).all()
+    assert (
+        (results["VAL_q0.1"] < results["VAL"]) & (results["VAL"] < results["VAL_q0.9"])
+    ).all()
 
 
 def test_quantile_forecast_with_multi_timeseries(
     ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
 ):
     input = copy.deepcopy(forecasting_input_base)
-    df = copy.deepcopy(ts_data_base) if False else series_for_quantile_tests(num_series=2, extra=FORECAST_LENGTH)
+    df = (
+        copy.deepcopy(ts_data_base)
+        if False
+        else series_for_quantile_tests(num_series=2, extra=FORECAST_LENGTH)
+    )
     quantile_calibration_data = (
-        copy.deepcopy(ts_data_base) if False else series_for_quantile_tests(num_series=2, extra=FORECAST_LENGTH + 100)
+        copy.deepcopy(ts_data_base)
+        if False
+        else series_for_quantile_tests(num_series=2, extra=FORECAST_LENGTH + 100)
     )
     input.data = df.to_dict(orient="list")
     input.quantile_calibration_data = quantile_calibration_data.to_dict(orient="list")
@@ -244,21 +269,31 @@ def test_quantile_forecast_with_multi_timeseries(
     # confirm expected column names
     expected = {f"VAL_q{q}" for q in input.parameters.prediction_quantiles}
     assert len(expected.intersection(set(results.columns))) == 2
-    assert ((results["VAL_q0.1"] < results["VAL"]) & (results["VAL"] < results["VAL_q0.9"])).all()
+    assert (
+        (results["VAL_q0.1"] < results["VAL"]) & (results["VAL"] < results["VAL_q0.9"])
+    ).all()
 
 
 def test_quantile_forecast_with_multi_timeseries_and_compound_id(
     ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
 ):
     input = copy.deepcopy(forecasting_input_base)
-    df = copy.deepcopy(ts_data_base) if False else series_for_quantile_tests(num_series=2, extra=FORECAST_LENGTH)
+    df = (
+        copy.deepcopy(ts_data_base)
+        if False
+        else series_for_quantile_tests(num_series=2, extra=FORECAST_LENGTH)
+    )
     quantile_calibration_data = (
-        copy.deepcopy(ts_data_base) if False else series_for_quantile_tests(num_series=2, extra=FORECAST_LENGTH + 100)
+        copy.deepcopy(ts_data_base)
+        if False
+        else series_for_quantile_tests(num_series=2, extra=FORECAST_LENGTH + 100)
     )
 
     # add another id col
     df.insert(1, "ID2", ["B" for _ in range(len(df))])
-    quantile_calibration_data.insert(1, "ID2", ["B" for _ in range(len(quantile_calibration_data))])
+    quantile_calibration_data.insert(
+        1, "ID2", ["B" for _ in range(len(quantile_calibration_data))]
+    )
     input.schema.id_columns.append("ID2")
 
     input.data = df.to_dict(orient="list")
@@ -281,7 +316,9 @@ def test_quantile_forecast_with_multi_timeseries_and_compound_id(
     # confirm expected column names
     expected = {f"VAL_q{q}" for q in input.parameters.prediction_quantiles}
     assert len(expected.intersection(set(results.columns))) == 2
-    assert ((results["VAL_q0.1"] < results["VAL"]) & (results["VAL"] < results["VAL_q0.9"])).all()
+    assert (
+        (results["VAL_q0.1"] < results["VAL"]) & (results["VAL"] < results["VAL_q0.9"])
+    ).all()
 
 
 def test_forecast_with_schema_missing_target_columns(
@@ -297,7 +334,9 @@ def test_forecast_with_schema_missing_target_columns(
     _basic_result_checks(results, df)
 
 
-def test_schema_validation(ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput):
+def test_schema_validation(
+    ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
+):
     input = copy.deepcopy(forecasting_input_base)  # side-effects unless copied
     # bad prediction quantiles
     with pytest.raises(ValueError) as _:
@@ -329,39 +368,55 @@ def test_forecast_with_integer_timestamps(
     po: PredictOutput = runtime.forecast(input=input)
     results = pd.DataFrame.from_dict(po.results[0])
     assert results[timestamp_column].iloc[0] == SERIES_LENGTH + 1
-    assert results[timestamp_column].iloc[-1] - df[timestamp_column].iloc[-1] == FORECAST_LENGTH
+    assert (
+        results[timestamp_column].iloc[-1] - df[timestamp_column].iloc[-1]
+        == FORECAST_LENGTH
+    )
     assert results.dtypes[timestamp_column] == df.dtypes[timestamp_column]
 
 
-def test_forecast_with_float_timestamps(ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput):
+def test_forecast_with_float_timestamps(
+    ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
+):
     input: ForecastingInferenceInput = copy.deepcopy(forecasting_input_base)
     df = copy.deepcopy(ts_data_base)
 
     timestamp_column = input.schema.timestamp_column
-    df[timestamp_column] = [float(0.0) + x for x in range(1, SERIES_LENGTH * NUM_TIMESERIES + 1)]
+    df[timestamp_column] = [
+        float(0.0) + x for x in range(1, SERIES_LENGTH * NUM_TIMESERIES + 1)
+    ]
     input.data = df.to_dict(orient="list")
     runtime: InferenceRuntime = InferenceRuntime()
     po: PredictOutput = runtime.forecast(input=input)
     results = pd.DataFrame.from_dict(po.results[0])
     assert results[timestamp_column].iloc[0] == SERIES_LENGTH + 1
-    assert results[timestamp_column].iloc[-1] - df[timestamp_column].iloc[-1] == FORECAST_LENGTH
+    assert (
+        results[timestamp_column].iloc[-1] - df[timestamp_column].iloc[-1]
+        == FORECAST_LENGTH
+    )
     assert results.dtypes[timestamp_column] == df.dtypes[timestamp_column]
 
 
-def test_forecast_with_bogus_timestamps(ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput):
+def test_forecast_with_bogus_timestamps(
+    ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
+):
     input: ForecastingInferenceInput = copy.deepcopy(forecasting_input_base)
     df = copy.deepcopy(ts_data_base)
 
     timestamp_column = input.schema.timestamp_column
     df[timestamp_column] = df[timestamp_column].astype(str)
-    df[timestamp_column] = [str(x) for x in range(1, SERIES_LENGTH * NUM_TIMESERIES + 1)]
+    df[timestamp_column] = [
+        str(x) for x in range(1, SERIES_LENGTH * NUM_TIMESERIES + 1)
+    ]
     input.data = df.to_dict(orient="list")
     runtime: InferenceRuntime = InferenceRuntime()
     with pytest.raises(HTTPException) as _:
         runtime.forecast(input=input)
 
 
-def test_forecast_with_bogus_values(ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput):
+def test_forecast_with_bogus_values(
+    ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
+):
     input: ForecastingInferenceInput = copy.deepcopy(forecasting_input_base)
     df = copy.deepcopy(ts_data_base)
     df["VAL"] = df["VAL"].astype(str)
@@ -372,7 +427,9 @@ def test_forecast_with_bogus_values(ts_data_base: pd.DataFrame, forecasting_inpu
         runtime.forecast(input=input)
 
 
-def test_forecast_with_bogus_model_id(ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput):
+def test_forecast_with_bogus_model_id(
+    ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
+):
     input: ForecastingInferenceInput = copy.deepcopy(forecasting_input_base)
     df = copy.deepcopy(ts_data_base)
     input.data = df.to_dict(orient="list")
@@ -398,7 +455,9 @@ def test_forecast_with_insufficient_context_length(
 
 
 @pytest.mark.skip
-def test_forecast_with_nan_data(ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput):
+def test_forecast_with_nan_data(
+    ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
+):
     input: ForecastingInferenceInput = copy.deepcopy(forecasting_input_base)
     df = copy.deepcopy(ts_data_base)
     df.iloc[0, df.columns.get_loc("VAL")] = np.nan
@@ -411,7 +470,9 @@ def test_forecast_with_nan_data(ts_data_base: pd.DataFrame, forecasting_input_ba
 
 
 # @pytest.mark.skip
-def test_forecast_with_missing_row(ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput):
+def test_forecast_with_missing_row(
+    ts_data_base: pd.DataFrame, forecasting_input_base: ForecastingInferenceInput
+):
     input: ForecastingInferenceInput = copy.deepcopy(forecasting_input_base)
     df = copy.deepcopy(ts_data_base)
     df = df.drop(index=10)

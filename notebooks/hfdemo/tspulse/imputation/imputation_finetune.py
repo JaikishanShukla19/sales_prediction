@@ -18,7 +18,6 @@ from tsfm_public import TimeSeriesPreprocessor, get_datasets
 from tsfm_public.models.tspulse import TSPulseForReconstruction
 from tsfm_public.toolkit.lr_finder import optimal_lr_finder
 
-
 warnings.filterwarnings("ignore")
 
 device = "cuda"
@@ -67,7 +66,9 @@ def main(DATASET, mask_type, mask_ratio):
         parse_dates=[timestamp_column],
     )
 
-    target_columns = data.columns.to_list()[1:]  # all the columns from the data except 'date'
+    target_columns = data.columns.to_list()[
+        1:
+    ]  # all the columns from the data except 'date'
 
     column_specifiers = {
         "timestamp_column": timestamp_column,
@@ -107,7 +108,9 @@ def main(DATASET, mask_type, mask_ratio):
     model_dict["num_input_channels"] = tsp.num_input_channels
 
     model = TSPulseForReconstruction.from_pretrained(
-        "ibm-granite/granite-timeseries-tspulse-r1", revision="tspulse-hybrid-dualhead-512-p8-r1", **model_dict
+        "ibm-granite/granite-timeseries-tspulse-r1",
+        revision="tspulse-hybrid-dualhead-512-p8-r1",
+        **model_dict,
     ).to(device)
 
     OUT_DIR = "tspulse_finetuned_models/"
@@ -171,7 +174,9 @@ def main(DATASET, mask_type, mask_ratio):
         save_strategy="epoch",
         logging_strategy="epoch",
         save_total_limit=1,
-        logging_dir=os.path.join(OUT_DIR, "output"),  # Make sure to specify a logging directory
+        logging_dir=os.path.join(
+            OUT_DIR, "output"
+        ),  # Make sure to specify a logging directory
         load_best_model_at_end=True,  # Load the best model when training ends
         metric_for_best_model="eval_loss",  # Metric to monitor for early stopping
         greater_is_better=False,  # For loss
@@ -205,7 +210,9 @@ def main(DATASET, mask_type, mask_ratio):
 
     # save the finetuned model
     os.makedirs("finetuned_models", exist_ok=True)
-    path_to_save_model = f"finetuned_models/finetuned_model_{DATASET}_{mask_ratio}_{mask_type}"
+    path_to_save_model = (
+        f"finetuned_models/finetuned_model_{DATASET}_{mask_ratio}_{mask_type}"
+    )
     finetune_trainer.save_model(path_to_save_model)
 
     if DATASET in ["ETTh1", "ETTh2", "ETTm1", "ETTm2"]:
@@ -217,14 +224,20 @@ def main(DATASET, mask_type, mask_ratio):
         return torch.stack([item["past_values"] for item in batch])
 
     test_dataloader = DataLoader(
-        test_dataset, batch_size=batch_size, shuffle=False, collate_fn=collate_only_past_values
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        collate_fn=collate_only_past_values,
     )
 
     model_path = path_to_save_model
 
     # load the finetuned model
     model = TSPulseForReconstruction.from_pretrained(
-        model_path, fft_time_add_forecasting_pt_loss=False, num_input_channels=tsp.num_input_channels, mask_type="user"
+        model_path,
+        fft_time_add_forecasting_pt_loss=False,
+        num_input_channels=tsp.num_input_channels,
+        mask_type="user",
     ).to(device)
 
     seed = 42
@@ -251,7 +264,9 @@ def main(DATASET, mask_type, mask_ratio):
         masks = np.concatenate(masks)
 
         MSE = mse(y=trues[masks == 1], y_hat=preds[masks == 1], reduction="mean")
-        print(f"Dataset = {DATASET}  : Mask Type = {mask_type}  : Mask Ratio = {mask_ratio}")
+        print(
+            f"Dataset = {DATASET}  : Mask Type = {mask_type}  : Mask Ratio = {mask_ratio}"
+        )
         print(f"Mean Squarred Error (MSE)={MSE:.3f}")
 
         output_file = "tspulse_finetuned_imputation_results.csv"

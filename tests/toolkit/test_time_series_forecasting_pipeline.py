@@ -10,14 +10,24 @@ import pandas as pd
 import pytest
 from transformers import PatchTSTConfig, PatchTSTForPrediction
 
-from tsfm_public import PatchTSTFMForPrediction, TinyTimeMixerConfig, TinyTimeMixerForPrediction
+from tsfm_public import (
+    PatchTSTFMForPrediction,
+    TinyTimeMixerConfig,
+    TinyTimeMixerForPrediction,
+)
 from tsfm_public.models.flowstate import FlowStateConfig, FlowStateForPrediction
 from tsfm_public.models.patchtst_fm import PatchTSTFMConfig
-from tsfm_public.toolkit.conformal import PostHocProbabilisticMethod, PostHocProbabilisticProcessor
+from tsfm_public.toolkit.conformal import (
+    PostHocProbabilisticMethod,
+    PostHocProbabilisticProcessor,
+)
 from tsfm_public.toolkit.time_series_forecasting_pipeline import (
     TimeSeriesForecastingPipeline,
 )
-from tsfm_public.toolkit.time_series_preprocessor import DEFAULT_FREQUENCY_MAPPING, TimeSeriesPreprocessor
+from tsfm_public.toolkit.time_series_preprocessor import (
+    DEFAULT_FREQUENCY_MAPPING,
+    TimeSeriesPreprocessor,
+)
 from tsfm_public.toolkit.util import select_by_index
 
 
@@ -118,8 +128,16 @@ testable_param_map = {
 # this fixture couples a model with a parameter to test
 @pytest.fixture(
     scope="module",
-    params=((model, param) for model, params in testable_param_map.items() for param in params),
-    ids=(f"{model}-{param}" for model, params in testable_param_map.items() for param in params),
+    params=(
+        (model, param)
+        for model, params in testable_param_map.items()
+        for param in params
+    ),
+    ids=(
+        f"{model}-{param}"
+        for model, params in testable_param_map.items()
+        for param in params
+    ),
 )
 def model_param(request):
     model, param = request.param
@@ -155,24 +173,31 @@ def test_models_parameters_in_forecasting_pipeline(random_sine_wave_data, model_
 
     forecasts = forecast_pipeline(random_sine_wave_data)
     if param == "prediction_length":
-        assert len(forecasts[target_columns[0]].iloc[0]) == test_param["prediction_length"]
+        assert (
+            len(forecasts[target_columns[0]].iloc[0]) == test_param["prediction_length"]
+        )
 
     if param == "quantile_levels":
         num_quantiles = len(test_param["quantile_levels"])
         assert (
-            forecasts.shape[1] == 1 + 2 * len(target_columns) + len(target_columns) * num_quantiles
+            forecasts.shape[1]
+            == 1 + 2 * len(target_columns) + len(target_columns) * num_quantiles
         ), f"Number of expetect columns does not match. Received: {forecasts.shape[1]} Expected {1 + 2 * len(target_columns) + len(target_columns) * num_quantiles}"
 
 
 def test_forecasting_pipeline_defaults():
-    model = PatchTSTForPrediction(PatchTSTConfig(prediction_length=3, context_length=33))
+    model = PatchTSTForPrediction(
+        PatchTSTConfig(prediction_length=3, context_length=33)
+    )
 
     tspipe = TimeSeriesForecastingPipeline(model)
 
     assert tspipe._preprocess_params["prediction_length"] == 3
     assert tspipe._preprocess_params["context_length"] == 33
 
-    tspipe = TimeSeriesForecastingPipeline(model=model, prediction_length=6, context_length=66)
+    tspipe = TimeSeriesForecastingPipeline(
+        model=model, prediction_length=6, context_length=66
+    )
 
     assert tspipe._preprocess_params["prediction_length"] == 6
     assert tspipe._preprocess_params["context_length"] == 66
@@ -227,7 +252,10 @@ def test_forecasting_pipeline_forecasts(patchtst_base_model, etth_data_base):
     assert forecasts_no_future.shape == (1, 2 * len(target_columns) + 1)
 
     # check forecasts match
-    assert forecasts_no_future.iloc[0]["OT_prediction"] == forecasts.iloc[0]["OT_prediction"]
+    assert (
+        forecasts_no_future.iloc[0]["OT_prediction"]
+        == forecasts.iloc[0]["OT_prediction"]
+    )
 
     # test that forecasts are properly exploded
     forecast_pipeline = TimeSeriesForecastingPipeline(
@@ -267,7 +295,9 @@ def test_forecasting_pipeline_forecasts(patchtst_base_model, etth_data_base):
     assert forecasts.shape == (10, 2 * len(target_columns) + 1)
 
 
-def test_forecasting_pipeline_forecasts_with_preprocessor(patchtst_base_model, etth_data_base):
+def test_forecasting_pipeline_forecasts_with_preprocessor(
+    patchtst_base_model, etth_data_base
+):
     timestamp_column = "date"
     id_columns = []
     target_columns = ["HUFL", "HULL", "MUFL", "MULL", "LUFL", "LULL", "OT"]
@@ -376,7 +406,10 @@ def test_frequency_token(ttm_dummy_model, etth_data):
         explode_forecasts=False,
         inverse_scale_outputs=True,
     )
-    assert forecast_pipeline._preprocess_params["frequency_token"] == DEFAULT_FREQUENCY_MAPPING["h"]
+    assert (
+        forecast_pipeline._preprocess_params["frequency_token"]
+        == DEFAULT_FREQUENCY_MAPPING["h"]
+    )
 
     with pytest.raises(ValueError):
         forecast_pipeline = TimeSeriesForecastingPipeline(
@@ -417,7 +450,11 @@ def test_prediction_filter_length(etth_data):
     assert model.config.prediction_filter_length == pfl
 
     forecast_pipeline = TimeSeriesForecastingPipeline(
-        model=model, feature_extractor=tsp, explode_forecasts=False, inverse_scale_outputs=True, device="cpu"
+        model=model,
+        feature_extractor=tsp,
+        explode_forecasts=False,
+        inverse_scale_outputs=True,
+        device="cpu",
     )
     forecasts = forecast_pipeline(train_data.iloc[:200])
 
@@ -462,7 +499,9 @@ def test_probabilistic_forecasts(etth_data):
     forecasts_cal = forecast_pipeline(train_data.iloc[-200:])
 
     conformal = PostHocProbabilisticProcessor(
-        window=100, quantiles=[0.1, 0.9], method=PostHocProbabilisticMethod.CONFORMAL.value
+        window=100,
+        quantiles=[0.1, 0.9],
+        method=PostHocProbabilisticMethod.CONFORMAL.value,
     )
 
     # prepare calibration data
@@ -491,8 +530,22 @@ def test_probabilistic_forecasts(etth_data):
     forecasts = forecast_pipeline(test_data)
 
     assert len(forecasts[f"{target_columns[0]}_prediction"].iloc[0]) == pfl
-    assert len(forecasts[f"{target_columns[0]}_prediction_q{conformal.quantiles[0]}"].iloc[0]) == pfl
-    assert len(forecasts[f"{target_columns[0]}_prediction_q{conformal.quantiles[1]}"].iloc[0]) == pfl
+    assert (
+        len(
+            forecasts[f"{target_columns[0]}_prediction_q{conformal.quantiles[0]}"].iloc[
+                0
+            ]
+        )
+        == pfl
+    )
+    assert (
+        len(
+            forecasts[f"{target_columns[0]}_prediction_q{conformal.quantiles[1]}"].iloc[
+                0
+            ]
+        )
+        == pfl
+    )
 
     # with explode
     forecast_pipeline = TimeSeriesForecastingPipeline(
